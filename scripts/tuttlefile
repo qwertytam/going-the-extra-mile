@@ -1,0 +1,41 @@
+file://US.zip <- http://download.geonames.org/export/dump/US.zip ! download
+
+
+file://US.txt <- file://US.zip
+    unzip US.zip
+
+
+sqlite://us-counties.sqlite/us <- file://US.txt ! python
+    import sqlite3
+    import csv
+    INFILE = 'US.txt'
+    DBFILE = 'us-counties.sqlite'
+
+    with open(INFILE) as incsv:
+        reader = csv.reader(incsv, delimiter="\t")
+        conn = sqlite3.connect(DBFILE)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE us
+                 (name, country_code, subcountry_code, geonameid, latitude, \
+                   longitude, featureclass, featurecode admin1code, admin2code, \
+                   admin3code, admin4code)''')
+        for geonameid, name, asciiname, alternatenames, latitude, longitude, \
+          featureclass, featurecode, countrycode, cc2, admin1code, admin2code, \
+          admin3code, admin4code, population, elevation, dem, timezone, \
+          modificationdate in reader:
+            name = name.decode('utf8')
+            country_code = countrycode.decode('utf8')
+            subcountry_code = admin1code.decode('utf8')
+            geonameid = geonameid.decode('utf8')
+            latitude = latitude.decode('utf8')
+            longitude = longitude.decode('utf8')
+            featureclass = featureclass.decode('utf8')
+            featurecode = featurecode.decode('utf8')
+            admin1code = admin1code.decode('utf8')
+            admin2code = admin2code.decode('utf8')
+            admin3code = admin3code.decode('utf8')
+            admin4code = admin4code.decode('utf8')
+            c.execute("INSERT INTO us VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (name, country_code, subcountry_code, geonameid, atitude, \
+              longitude, featureclass, featurecode admin1code, admin2code, admin3code, admin4code))
+        conn.commit()
+        conn.close()
