@@ -1,12 +1,12 @@
 from requests import get
 from zipfile import ZipFile
-import os, sqlite3
+import csv, os, sqlite3
 
 url = 'https://download.geonames.org/export/dump/US.zip'
 data_dir = './data/'
 usz_fn = 'US.zip'
 ust_fn = 'US.txt'
-usdb_fn = 'us-counties.db'
+usdb_fn = 'us-counties.sqlite'
 fp = data_dir + usz_fn
 
 # with open(fp, 'wb') as f:
@@ -29,14 +29,42 @@ fp = data_dir + usz_fn
 # print('\nHTTP status {}'.format(response.status_code))
 # print('Content type {}'.format(response.headers['content-type']))
 # print('Enconding {}'.format(response.encoding))
+#
+# with ZipFile(fp, 'r') as zip_ref:
+#     zpath = zip_ref.extract(ust_fn, path = data_dir)
+#     zip_ref.close()
+#     print('Extracted {}'.format(zpath))
 
-with ZipFile(fp, 'r') as zip_ref:
-    zpath = zip_ref.extract(ust_fn, path = data_dir)
-    zip_ref.close()
-    print('Extracted {}'.format(zpath))
+INFILE = data_dir + ust_fn
+DBFILE = data_dir + usdb_fn
 
-fp = data_dir + usdb_fn
-conn = sqlite3.connect(fp)
+with open(INFILE) as incsv:
+    reader = csv.reader(incsv, delimiter="\t")
+    conn = sqlite3.connect(DBFILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE county
+             (name, latitude, longitude, feature_class, feature_code, country_code, subcountry_code, admin1_code, admin2_code, admin3_code, admin4_code, geonameid)''')
+    for geonameid, name, asciiname, alternatenames, latitude, longitude, \
+      featureclass, featurecode, countrycode, cc2, admin1code, admin2code, \
+      admin3code, admin4code, population, elevation, dem, timezone, \
+      modificationdate in reader:
+        # name = name.decode('utf8')
+        feature_class = featureclass
+        feature_code = featurecode
+        country_code = countrycode
+        subcountry_code = admin1code
+        admin1_code = admin1code
+        admin2_code = admin2code
+        admin3_code = admin3code
+        admin4_code = admin4code
+        # geonameid = geonameid.decode('utf8')
+        c.execute("INSERT INTO county VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (name, latitude, longitude, feature_class, feature_code, country_code, subcountry_code, admin1_code, admin2_code, admin3_code, admin4_code, geonameid))
+
+    c.execute("DELETE FROM county WHERE feature_code <> 'ADM2'")
+    conn.commit()
+    conn.close()
+
+# os.remove(DBFILE)
 
 # fn = 'workfile.txt'
 # with open(fn, 'w+') as f:
