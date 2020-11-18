@@ -1,5 +1,7 @@
-# Data files
-US.zip
+# Data files in scripts dir
+scripts/*.zip
+scripts/*.txt
+scripts/*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
