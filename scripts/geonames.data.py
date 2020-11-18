@@ -1,11 +1,17 @@
-import requests, os, sys
-import zipfile
+from requests import get
+from zipfile import ZipFile
+import os, sqlite3
 
 url = 'https://download.geonames.org/export/dump/US.zip'
-fn = 'US.zip'
-# with open(fn, 'wb') as f:
-#     print('Downloading {}'.format(fn))
-#     response = requests.get(url, stream=True)
+data_dir = './data/'
+usz_fn = 'US.zip'
+ust_fn = 'US.txt'
+usdb_fn = 'us-counties.db'
+fp = data_dir + usz_fn
+
+# with open(fp, 'wb') as f:
+#     print('Downloading {}'.format(fp))
+#     response = get(url, stream=True)
 #     total_length = response.headers.get('content-length')
 #
 #     if total_length is None: # no content length header
@@ -24,8 +30,13 @@ fn = 'US.zip'
 # print('Content type {}'.format(response.headers['content-type']))
 # print('Enconding {}'.format(response.encoding))
 
-with zipfile.ZipFile(fn, 'r') as zip_ref:
-    zip_ref.extractall()
+with ZipFile(fp, 'r') as zip_ref:
+    zpath = zip_ref.extract(ust_fn, path = data_dir)
+    zip_ref.close()
+    print('Extracted {}'.format(zpath))
+
+fp = data_dir + usdb_fn
+conn = sqlite3.connect(fp)
 
 # fn = 'workfile.txt'
 # with open(fn, 'w+') as f:
