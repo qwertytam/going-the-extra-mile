@@ -80,19 +80,3 @@ county_and_seats = join_counties_seats(counties, county_seats)
 county_and_seats.loc[county_and_seats['county_seat_lat'].notna(), 'county_lat'] = county_and_seats.loc[county_and_seats['county_seat_lat'].notna(), 'county_seat_lat']
 county_and_seats.loc[county_and_seats['county_seat_lon'].notna(), 'county_lon'] = county_and_seats.loc[county_and_seats['county_seat_lon'].notna(), 'county_seat_lon']
 print(county_and_seats)
-
-# county_seats['nidx'] = county_seats['state'].map(str) + '_' + county_seats['admin2_code'].map(str)
-# dups_locs = county_seats.duplicated(subset=['nidx']).values
-# dups = county_seats.loc[dups_locs, ['nidx']]
-# ddups = county_seats.loc[county_seats['nidx'].isin(dups['nidx'])]
-#
-# dddups = pd.merge(ddups, counties, how='left',
-#                             on=['state', 'admin2_code'],
-#                             suffixes=('_ddups', '_c'))
-# print(dddups)
-# print(county_seats)
-# ddups = county_seats.loc[county_seats['state'].isin(dups['state'])
-                         # & county_seats['admin2_code'].isin(dups['admin2_code'])]
-#
-# ddups = np.sort(ddups, order=['state', 'admin2_code'])
-# print(nidx)
