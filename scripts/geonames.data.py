@@ -1,6 +1,6 @@
 import sqlite3
+import csv
 
-from csv import reader, writer
 from os import mkdir, remove
 from os.path import exists, join
 from requests import get
@@ -53,9 +53,9 @@ infile_fp = join(data_dir, txt_fnm)
 dbfile_fp = join(data_dir, db_fnm)
 
 # Create table and read data for each county
-with open(infile_fp) as incsv:
+with open(infile_fp, encoding='utf8') as incsv:
     print('Reading {} into county SQL table'.format(infile_fp))
-    reader = reader(incsv, delimiter="\t")
+    reader = csv.reader(incsv, delimiter="\t")
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
     c.execute('''CREATE TABLE county
@@ -77,9 +77,9 @@ with open(infile_fp) as incsv:
 print('Created and added data to county SQL table\n')
 
 # Create table and read data for each county seat
-with open(infile_fp) as incsv:
+with open(infile_fp, encoding='utf8') as incsv:
     print('Reading {} into county_seat SQL table'.format(infile_fp))
-    reader = reader(incsv, delimiter="\t")
+    reader = csv.reader(incsv, delimiter="\t")
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
     c.execute('''CREATE TABLE county_seat
@@ -108,9 +108,9 @@ print('Deleted {}\n'.format(infile_fp))
 outfile_fp = join(data_dir, counties_csv_fnm)
 COUNTY_HEADERS = ['name', 'latitude', 'longitude', 'state',
 'admin2_code', 'geonameid']
-with open(outfile_fp, 'w') as outcsv:
+with open(outfile_fp, 'w', encoding='utf8') as outcsv:
     print('Writing county SQL table to {}'.format(outfile_fp))
-    writer = writer(outcsv, lineterminator="\n")
+    writer = csv.writer(outcsv, lineterminator="\n")
     writer.writerow(COUNTY_HEADERS)
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
@@ -133,9 +133,9 @@ print('Created and added data to {}'.format(outfile_fp))
 outfile_fp = join(data_dir, county_seat_csv_fnm)
 COUNTYSEAT_HEADERS = ['name', 'latitude', 'longitude', 'state',
 'admin2_code', 'geonameid']
-with open(outfile_fp, 'w') as outcsv:
+with open(outfile_fp, 'w', encoding='utf8') as outcsv:
     print('Writing county_seat SQL table to {}'.format(outfile_fp))
-    writer = writer(outcsv, lineterminator="\n")
+    writer = csv.writer(outcsv, lineterminator="\n")
     writer.writerow(COUNTYSEAT_HEADERS)
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
