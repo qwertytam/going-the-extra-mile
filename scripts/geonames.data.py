@@ -1,9 +1,10 @@
-import csv, os, sqlite3
+import sqlite3
 
+from csv import reader, writer
+from os import mkdir, remove
+from os.path import exists, join
 from requests import get
 from zipfile import ZipFile
-from os import mkdir
-from os.path import exists, join
 
 url = 'https://download.geonames.org/export/dump/US.zip'
 data_dir = join('..', 'data')
@@ -45,7 +46,7 @@ with ZipFile(fp, 'r') as zip_ref:
     zpath = zip_ref.extract(txt_fnm, path = data_dir)
     zip_ref.close()
     print('Extracted {}'.format(zpath))
-os.remove(fp)
+remove(fp)
 print('Deleted {}\n'.format(fp))
 
 infile_fp = join(data_dir, txt_fnm)
@@ -54,7 +55,7 @@ dbfile_fp = join(data_dir, db_fnm)
 # Create table and read data for each county
 with open(infile_fp) as incsv:
     print('Reading {} into county SQL table'.format(infile_fp))
-    reader = csv.reader(incsv, delimiter="\t")
+    reader = reader(incsv, delimiter="\t")
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
     c.execute('''CREATE TABLE county
@@ -78,7 +79,7 @@ print('Created and added data to county SQL table\n')
 # Create table and read data for each county seat
 with open(infile_fp) as incsv:
     print('Reading {} into county_seat SQL table'.format(infile_fp))
-    reader = csv.reader(incsv, delimiter="\t")
+    reader = reader(incsv, delimiter="\t")
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
     c.execute('''CREATE TABLE county_seat
@@ -100,7 +101,7 @@ with open(infile_fp) as incsv:
 print('Created and added data to county_seat SQL table\n')
 
 # Delete the text file
-os.remove(infile_fp)
+remove(infile_fp)
 print('Deleted {}\n'.format(infile_fp))
 
 # Write the county data to csv file
@@ -109,7 +110,7 @@ COUNTY_HEADERS = ['name', 'latitude', 'longitude', 'state',
 'admin2_code', 'geonameid']
 with open(outfile_fp, 'w') as outcsv:
     print('Writing county SQL table to {}'.format(outfile_fp))
-    writer = csv.writer(outcsv, lineterminator="\n")
+    writer = writer(outcsv, lineterminator="\n")
     writer.writerow(COUNTY_HEADERS)
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
@@ -134,7 +135,7 @@ COUNTYSEAT_HEADERS = ['name', 'latitude', 'longitude', 'state',
 'admin2_code', 'geonameid']
 with open(outfile_fp, 'w') as outcsv:
     print('Writing county_seat SQL table to {}'.format(outfile_fp))
-    writer = csv.writer(outcsv, lineterminator="\n")
+    writer = writer(outcsv, lineterminator="\n")
     writer.writerow(COUNTYSEAT_HEADERS)
     conn = sqlite3.connect(dbfile_fp)
     c = conn.cursor()
@@ -154,7 +155,7 @@ with open(outfile_fp, 'w') as outcsv:
 print('Created and added data to {}'.format(outfile_fp))
 
 # Remove the database file
-os.remove(dbfile_fp)
+remove(dbfile_fp)
 print('Deleted {}\n'.format(dbfile_fp))
 
 print('#<<<<   Script completed   >>>>#')
