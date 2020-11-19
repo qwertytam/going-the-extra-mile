@@ -1,7 +1,9 @@
 '''
 _______________|  tools.py :: Assorted tools for analysis of gold
 
-CHANGE LOG  For LATEST version, see https://github.com/qwertytam/going-the-extra-milec
+CHANGE LOG  For LATEST version, see
+https://github.com/qwertytam/going-the-extra-mile
+
 2020-11-18  Initial version
 '''
 import pandas as pd
@@ -38,9 +40,9 @@ def getcounty_seats(file):
     panda
         A panda of county seat information
     """
-    county_seats = pd.read_csv(file, header=0)
+    seats = pd.read_csv(file, header=0)
 
-    return county_seats
+    return seats
 
 
 def join_counties_seats(counties, county_seats):
@@ -61,22 +63,83 @@ def join_counties_seats(counties, county_seats):
 
     # Note produces NaN for counties with no seat, and ignores possible
     # duplicated county seat data
-    county_and_seats = pd.merge(counties, county_seats, how='left',
-                                on=['state', 'admin2_code'],
-                                suffixes=('_c', '_cs'))
+    cands = pd.merge(counties, county_seats, how='left',
+                     on=['state', 'admin2_code'], suffixes=('_c', '_cs'))
 
-    county_and_seats.columns = ['county_name','county_lat', 'county_lon',
-                                'state', 'admin2_code', 'county_geoid',
-                                'county_seat_name', 'county_seat_lat',
-                                'county_seat_lon', 'county_seat_geoid']
-    county_and_seats.drop(['county_geoid', 'county_seat_geoid'],
-                          axis=1, inplace=True)
-    return county_and_seats
+    cands.columns = ['county_name','county_lat', 'county_lon', 'state',
+                     'admin2_code', 'county_geoid', 'seat_name', 'seat_lat',
+                     'seat_lon', 'seat_geoid']
+    # cands.drop(['county_geoid', 'admin2_code', 'seat_geoid'],
+    #                         axis=1, inplace=True)
 
+    return cands
 
-counties = getcounties('../data/counties.csv')
-county_seats = getcounty_seats('../data/county-seats.csv')
-county_and_seats = join_counties_seats(counties, county_seats)
-county_and_seats.loc[county_and_seats['county_seat_lat'].notna(), 'county_lat'] = county_and_seats.loc[county_and_seats['county_seat_lat'].notna(), 'county_seat_lat']
-county_and_seats.loc[county_and_seats['county_seat_lon'].notna(), 'county_lon'] = county_and_seats.loc[county_and_seats['county_seat_lon'].notna(), 'county_seat_lon']
-print(county_and_seats)
+def visit_data(cands):
+    """Returns a panda of county and county seat data with visit name, latitude
+    and longitude coordinates
+
+    Parameters
+    ----------
+    cands : panda
+        The panda data frame of and county seat data
+
+    Returns
+    -------
+    panda
+        A panda of joined county and county seat information with visit
+        name, latitude and longitude
+    """
+
+    cands['v_id'] = cands['county_geoid']
+    cands['v_name'] = cands['county_name']
+    cands['v_lat'] = cands['county_lat']
+    cands['v_lon'] = cands['county_lon']
+
+    cands.loc[cands['seat_geoid'].notna(), 'v_id'] = cands.loc[
+                                        cands['seat_geoid'].notna(), 'seat_geoid']
+    cands.loc[cands['seat_name'].notna(), 'v_name'] = cands.loc[
+                                        cands['seat_name'].notna(), 'seat_name']
+    cands.loc[cands['seat_lat'].notna(), 'v_lat'] = cands.loc[
+                                        cands['seat_lat'].notna(), 'seat_lat']
+    cands.loc[cands['seat_lon'].notna(), 'v_lon'] = cands.loc[
+                                        cands['seat_lon'].notna(), 'seat_lon']
+
+    return cands
+
+def dict_data(cands):
+    """Returns a dictionary of visit id as string, latitude and longitude
+    coordinates
+
+    Parameters
+    ----------
+    cands : panda
+        The panda data frame with visit information
+
+    Returns
+    -------
+    dict
+        A dictionary of visit id as string, latitude and longitude coordinates
+    """
+
+    cands['v_id'] = cands['v_id'].astype(str)
+    dict = cands.set_index(['v_id']).T.to_dict(orient='list')
+    return dict
+
+def rand_slice(cands, rand):
+    """Returns a slice of the data frame from rand randomy chosen
+
+    Parameters
+    ----------
+    cands : panda
+        The panda data frame with visit information
+    rand : integer
+        The number of random items to return
+
+    Returns
+    -------
+    panda
+        The panda of length rand
+    """
+    rand_slice = cands.sample(n=rand)
+
+    return rand_slice
