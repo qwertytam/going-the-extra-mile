@@ -1,7 +1,7 @@
-# Data files in scripts dir
-scripts/data/*.zip
-scripts/data/*.txt
-scripts/data/*.sqlite
+# Project data files
+data/*.zip
+data/*.txt
+data/*.sqlite
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
