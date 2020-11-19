@@ -7,6 +7,7 @@ import random
 import tools as gem
 
 from collections import defaultdict
+from datetime import datetime
 from simanneal import Annealer
 from os.path import join
 
@@ -78,7 +79,7 @@ if __name__ == '__main__':
     data_dir = join('..', 'data')
     counties_csv_fnm = 'counties.csv'
     county_seat_csv_fnm = 'county-seats.csv'
-    rand = 100
+    rand = 10
 
     counties = gem.getcounties(join(data_dir, counties_csv_fnm))
     seats = gem.getcounty_seats(join(data_dir, county_seat_csv_fnm))
@@ -100,7 +101,7 @@ if __name__ == '__main__':
             distance_matrix[ka][kb] = 0.0 if kb == ka else distance(va, vb)
 
     tsp = TravellingSalesmanProblem(init_state, distance_matrix)
-    tsp.set_schedule(tsp.auto(minutes=10))
+    tsp.set_schedule(tsp.auto(minutes=20))
     # since our state is just a list, slice is the fastest way to copy
     tsp.copy_strategy = "slice"
     state, e = tsp.anneal()
@@ -110,15 +111,16 @@ if __name__ == '__main__':
 
     print()
     print("%i mile route:" % e)
-    print(" -->  ".join(state))
+    # print(" -->  ".join(state))
 
-out_fnm = 'anneal_out.csv'
+fin_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+out_fnm = format('anneal_out_{}.csv'.format(fin_time))
 outfile_fp = join(data_dir, out_fnm)
 
 with open(outfile_fp, 'w', encoding='utf8') as outcsv:
     print('Writing results to {}'.format(outfile_fp))
     writer = csv.writer(outcsv, lineterminator="\n")
-    writer.writerow('v_ids')
+    writer.writerow(['v_ids'])
     for row in state:
         row = [row]
         writer.writerow(row)
