@@ -143,3 +143,36 @@ def rand_slice(cands, rand):
     rand_slice = cands.sample(n=rand)
 
     return rand_slice
+
+def gather_tour(file, cands):
+    """Returns a slice of the data frame from rand randomy chosen
+
+    Parameters
+    ----------
+    cands : panda
+        The panda data frame with visit information
+    rand : integer
+        The number of random items to return
+
+    Returns
+    -------
+    panda
+        The panda of length rand
+    """
+
+
+def plot_path(tour):
+    """Returns a slice of the data frame from rand randomy chosen
+
+    Parameters
+    ----------
+    cands : panda
+        The panda data frame with visit information
+    rand : integer
+        The number of random items to return
+
+    Returns
+    -------
+    panda
+        The panda of length rand
+    """
