@@ -1,3 +1,46 @@
+"""Geonames Data Gathering
+
+This script downloads, cleans and gathers county and seat data from
+Geonames. The data is saved as `.csv` files in the `.\data` folder.
+The script will overwrite currently exisiting `.csv` files with the
+same name (see below) in the `.\data` folder.
+
+The three csv files created are:
+    * counties.csv - county name, latitude, longitude, state, and
+    geoname database id
+    * seats.csv - seat name, latitude, longitude, state,
+    corresponding county geoname database id, and the seats' geoname
+    database id
+    * stops.csv - by default the county name, latitude, longitude, and
+    geoname database id; but if the county has a seat, then the
+    corresponding information for each county seat
+
+This script requires that csv and sqlite3 be installed within the
+Python environment you are running this script in.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * get_geoname_data - sources the geoname county and seat data as a
+    sqlite database
+    * get_county_data - gathers the geoname county data into
+    `.\data\counties.csv`
+    * get_county_data - gathers the geoname county seat data into
+    `.\data\seats.csv`
+    * get_stop_data - gathers the geoname county seat data into
+    `.\data\stops.csv`
+    * cleanup_geoname_data - removes downloaded `.zip` and `.txt`
+    files, and removes `.sqlite` databse files created by the `get_*`
+    functions in this file
+    * main - the main function of the script that executes the
+    functions in this file to populate the `.\data` folder
+
+TODO:
+    * Make script importable as a module
+    * Add functions as per documentation
+    * Revise functionality of script inline wit documentation
+"""
+
 import sqlite3
 import csv
 
