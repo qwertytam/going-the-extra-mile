@@ -188,7 +188,7 @@ def plot_path(tour):
 
     lines = [[(tour.v_lon[i],tour.v_lat[i]),(tour.v_lon[i+1],tour.v_lat[i+1])] for i in range(0,len(tour)-1)]
     lc = mc.LineCollection(lines, linewidths=2)
-    fig, ax = pl.subplots(figsize=(20,20))
+    fig, ax = pl.subplots(figsize=(10,5))
     ax.set_aspect('equal')
     ax.add_collection(lc)
     ax.autoscale()
