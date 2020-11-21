@@ -57,56 +57,66 @@ if __name__ == '__main__':
     data_dir = join('..', 'data')
     counties_csv_fnm = 'counties.csv'
     county_seat_csv_fnm = 'county-seats.csv'
-    rand = 10
+    rand = 100
 
     counties = gem.getcounties(join(data_dir, counties_csv_fnm))
     seats = gem.getcounty_seats(join(data_dir, county_seat_csv_fnm))
     cands = gem.join_counties_seats(counties, seats)
     cands = gem.visit_data(cands)
-#     # rand_slice = gem.rand_slice(cands[['v_id', 'v_lat', 'v_lon']], rand)
-#     # cands_dict = gem.dict_data(rand_slice)
-#     cands_dict = gem.dict_data(cands[['v_id', 'v_lat', 'v_lon']])
-#     cities = cands_dict
-#
-#     # initial state, a randomly-ordered itinerary
-#     init_state = list(cities)
-#     random.shuffle(init_state)
-#
-#     # create a distance matrix
-#     distance_matrix = defaultdict(dict)
-#     for ka, va in cities.items():
-#         for kb, vb in cities.items():
-#             distance_matrix[ka][kb] = 0.0 if kb == ka else distance(va, vb)
-#
-#     tsp = TravellingSalesmanProblem(init_state, distance_matrix)
-#     tsp.set_schedule(tsp.auto(minutes=20))
-#     # since our state is just a list, slice is the fastest way to copy
-#     tsp.copy_strategy = "slice"
-#     state, e = tsp.anneal()
-#
-#     # while state[0] != 'New York City':
-#     #     state = state[1:] + state[:1]  # rotate NYC to start
-#
-#     print()
-#     print("%i mile route:" % e)
-#     # print(" -->  ".join(state))
-#
-# fin_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-# out_fnm = format('anneal_out_{}.csv'.format(fin_time))
-# outfile_fp = join(data_dir, out_fnm)
-#
-# with open(outfile_fp, 'w', encoding='utf8') as outcsv:
-#     print('Writing results to {}'.format(outfile_fp))
-#     writer = csv.writer(outcsv, lineterminator="\n")
-#     writer.writerow(['v_ids'])
-#     for row in state:
-#         row = [row]
-#         writer.writerow(row)
-#
-# print('Created and added data to {}'.format(outfile_fp))
-file = 'anneal_out_20201119_170000.csv'
-tour = gem.gather_tour(join(data_dir, file), cands)
-tour.drop(['county_name', 'county_lat', 'county_lon', 'state', 'admin2_code',
-           'county_geoid', 'seat_name', 'seat_lat', 'seat_lon', 'seat_geoid',
-           'v_id'], axis=1, inplace=True)
-gem.plot_path(tour)
+    exc_states = ['AK', 'HI']
+    cands_drop = cands[~cands.state.isin(exc_states)]
+    rand_slice = gem.rand_slice(cands_drop[['v_id', 'v_lat', 'v_lon']], rand)
+    cands_dict = gem.dict_data(rand_slice)
+    # cands_dict = gem.dict_data(cands[['v_id', 'v_lat', 'v_lon']])
+    cities = cands_dict
+
+    # initial state, a randomly-ordered itinerary
+    init_state = list(cities)
+    random.shuffle(init_state)
+
+    # create a distance matrix
+    distance_matrix = defaultdict(dict)
+    for ka, va in cities.items():
+        for kb, vb in cities.items():
+            distance_matrix[ka][kb] = 0.0 if kb == ka else distance(va, vb)
+
+    tsp = TravellingSalesmanProblem(init_state, distance_matrix)
+    auto_sch = tsp.auto(minutes=2)
+    print('\n\nAuto schedule:')
+    print(auto_sch)
+    auto_sch['steps'] = 5000000
+    auto_sch['updates'] = round(auto_sch['steps'] / 1000, 0)
+    print('\n\nAuto schedule:')
+    print(auto_sch)
+    tsp.set_schedule(auto_sch)
+    # since our state is just a list, slice is the fastest way to copy
+    tsp.copy_strategy = "slice"
+    state, e = tsp.anneal()
+
+    # while state[0] != 'New York City':
+    #     state = state[1:] + state[:1]  # rotate NYC to start
+
+    print()
+    print("%i mile route:" % e)
+    # print(" -->  ".join(state))
+
+    fin_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_fnm = format('anneal_out_{}.csv'.format(fin_time))
+    outfile_fp = join(data_dir, out_fnm)
+
+    with open(outfile_fp, 'w', encoding='utf8') as outcsv:
+        print('Writing results to {}'.format(outfile_fp))
+        writer = csv.writer(outcsv, lineterminator="\n")
+        writer.writerow(['v_ids'])
+        for row in state:
+            row = [row]
+            writer.writerow(row)
+
+    print('Created and added data to {}'.format(outfile_fp))
+    file = 'anneal_out_20201119_170000.csv'
+    # outfile_fp = join(data_dir, file)
+    tour = gem.gather_tour(outfile_fp, cands)
+    tour.drop(['county_name', 'county_lat', 'county_lon', 'state', 'admin2_code',
+               'county_geoid', 'seat_name', 'seat_lat', 'seat_lon', 'seat_geoid',
+               'v_id'], axis=1, inplace=True)
+    gem.plot_path(tour)
