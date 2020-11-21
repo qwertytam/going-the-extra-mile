@@ -8,6 +8,10 @@ https://github.com/qwertytam/going-the-extra-mile
 '''
 import pandas as pd
 import numpy as np
+import pylab as pl
+
+import matplotlib.pyplot as plt
+from matplotlib import collections  as mc
 
 def getcounties(file):
     """Returns a panda of county data
@@ -159,6 +163,11 @@ def gather_tour(file, cands):
     panda
         The panda of length rand
     """
+    tour_gids = pd.read_csv(file, header=0)
+    tour_merge = pd.merge(tour_gids, cands, how='left',
+                     left_on=['v_ids'], right_on=['v_id'])
+
+    return tour_merge
 
 
 def plot_path(tour):
@@ -176,3 +185,11 @@ def plot_path(tour):
     panda
         The panda of length rand
     """
+
+    lines = [[(tour.v_lon[i],tour.v_lat[i]),(tour.v_lon[i+1],tour.v_lat[i+1])] for i in range(0,len(tour)-1)]
+    lc = mc.LineCollection(lines, linewidths=2)
+    fig, ax = pl.subplots(figsize=(20,20))
+    ax.set_aspect('equal')
+    ax.add_collection(lc)
+    ax.autoscale()
+    plt.show()
