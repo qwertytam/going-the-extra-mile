@@ -65,9 +65,9 @@ if __name__ == '__main__':
     cands = gem.visit_data(cands)
     exc_states = ['AK', 'HI']
     cands_drop = cands[~cands.state.isin(exc_states)]
-    rand_slice = gem.rand_slice(cands_drop[['v_id', 'v_lat', 'v_lon']], rand)
-    cands_dict = gem.dict_data(rand_slice)
-    # cands_dict = gem.dict_data(cands[['v_id', 'v_lat', 'v_lon']])
+    # rand_slice = gem.rand_slice(cands_drop[['v_id', 'v_lat', 'v_lon']], rand)
+    # cands_dict = gem.dict_data(rand_slice)
+    cands_dict = gem.dict_data(cands[['v_id', 'v_lat', 'v_lon']])
     cities = cands_dict
 
     # initial state, a randomly-ordered itinerary
@@ -81,10 +81,10 @@ if __name__ == '__main__':
             distance_matrix[ka][kb] = 0.0 if kb == ka else distance(va, vb)
 
     tsp = TravellingSalesmanProblem(init_state, distance_matrix)
-    auto_sch = tsp.auto(minutes=2)
+    auto_sch = tsp.auto(minutes=200)
     print('\n\nAuto schedule:')
     print(auto_sch)
-    auto_sch['steps'] = 5000000
+    auto_sch['steps'] = 50000000
     auto_sch['updates'] = round(auto_sch['steps'] / 1000, 0)
     print('\n\nAuto schedule:')
     print(auto_sch)
