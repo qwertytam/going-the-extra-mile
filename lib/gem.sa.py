@@ -67,8 +67,9 @@ if __name__ == '__main__':
     cands_drop = cands[~cands.state.isin(exc_states)]
     # rand_slice = gem.rand_slice(cands_drop[['v_id', 'v_lat', 'v_lon']], rand)
     # cands_dict = gem.dict_data(rand_slice)
-    cands_dict = gem.dict_data(cands[['v_id', 'v_lat', 'v_lon']])
+    cands_dict = gem.dict_data(cands_drop[['v_id', 'v_lat', 'v_lon']])
     cities = cands_dict
+
 
     # initial state, a randomly-ordered itinerary
     init_state = list(cities)
@@ -81,10 +82,10 @@ if __name__ == '__main__':
             distance_matrix[ka][kb] = 0.0 if kb == ka else distance(va, vb)
 
     tsp = TravellingSalesmanProblem(init_state, distance_matrix)
-    auto_sch = tsp.auto(minutes=200)
+    auto_sch = tsp.auto(minutes=100)
     print('\n\nAuto schedule:')
     print(auto_sch)
-    auto_sch['steps'] = 50000000
+    auto_sch['steps'] = 20000000
     auto_sch['updates'] = round(auto_sch['steps'] / 1000, 0)
     print('\n\nAuto schedule:')
     print(auto_sch)
@@ -113,7 +114,7 @@ if __name__ == '__main__':
             writer.writerow(row)
 
     print('Created and added data to {}'.format(outfile_fp))
-    file = 'anneal_out_20201119_170000.csv'
+    # file = 'anneal_out_20201119_170000.csv'
     # outfile_fp = join(data_dir, file)
     tour = gem.gather_tour(outfile_fp, cands)
     tour.drop(['county_name', 'county_lat', 'county_lon', 'state', 'admin2_code',
