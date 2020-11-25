@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 _______________|  tools.py :: Assorted tools for analysis of gold
 

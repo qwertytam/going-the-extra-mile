@@ -1,20 +1,21 @@
+# -*- coding: utf-8 -*-
 # %% [code]
 # Required module installs
-!pip install git+https://github.com/jvkersch/pyconcorde.git
+import seaborn as sns
+import pylab as pl
+import pandas as pd
+import numpy as np
+import folium
+from os.path import join as pjoin
+from matplotlib import colors as clrs
+from matplotlib import collections as mc
+from datetime import datetime
+from concorde.tsp import TSPSolver
+!pip install git+https: // github.com/jvkersch/pyconcorde.git
 
 # %% [code]
 # Module imports
-from concorde.tsp import TSPSolver
-from datetime import datetime
-from matplotlib import collections  as mc
-from matplotlib import colors as clrs
-from os.path import join as pjoin
 
-import folium
-import numpy as np
-import pandas as pd
-import pylab as pl
-import seaborn as sns
 
 # %% [code]
 # Read in the data
@@ -27,7 +28,7 @@ gnames = ['gid', 'name', 'asciiname', 'altnames', 'lat', 'long', 'f_class', 'f_c
 gucols = ['gid', 'name', 'lat', 'long', 'f_class', 'f_code', 'ISO_country', 'state', 'county']
 
 # Specify dtype for certain columns to avoid warning
-gdypte = {'ISO_country':str, 'state':str, 'county':str}
+gdypte = {'ISO_country': str, 'state': str, 'county': str}
 gdata = pd.read_csv(path, names=gnames, header=0, dtype=gdypte, usecols=gucols, delimiter="\t")
 
 # %% [code]
@@ -40,8 +41,8 @@ gdata.drop(gdata.loc[~gdata.isin({'f_code': keep_fcode}).f_code].index, axis=0, 
 gdata['state_county'] = gdata.apply(lambda x: str(x.state) + ':' + str(x.county), axis=1)
 
 # %% [code]
-f_code_county = 'ADM2' # geoname code for admin level 2 i.e. county
-f_code_seat = 'PPLA2' # geoname code for seat of admin level 2 administration i.e. county seat
+f_code_county = 'ADM2'  # geoname code for admin level 2 i.e. county
+f_code_seat = 'PPLA2'  # geoname code for seat of admin level 2 administration i.e. county seat
 
 # Drop county seats Orange, CA and the Washington Street Courthouse Annex, as they are not county seats
 # ref Wikipedia
@@ -49,7 +50,8 @@ drop_gids = [11497201, 5379513]
 gdata.drop(gdata.loc[gdata.isin(drop_gids).gid].index, axis=0, inplace=True)
 
 # Oakley, KS is actually the county seat for Logan County, state_county = 'KS:109'
-gdata.loc[(gdata.state == 'KS')&(gdata.name == 'Oakley')&(gdata.f_code == f_code_seat), 'state_county'] = 'KS:109'
+gdata.loc[(gdata.state == 'KS') & (gdata.name == 'Oakley') & (
+    gdata.f_code == f_code_seat), 'state_county'] = 'KS:109'
 
 # %% [code]
 # Data quality check
@@ -60,9 +62,9 @@ num_adm2 = len(gdata[gdata.f_code == f_code_county])
 uniq_state_county_ids = gdata.state_county[gdata.f_code == f_code_county].unique()
 num_adm2_uniq = len(uniq_state_county_ids)
 
-#2020-11-23: Data has 3,142 counties (1 diff to expected 3,143) with 0 duplicates
-counties_total = 3243 # ref Wikipedia for counties and equivalents
-non_states = {'AS':5, 'GU':1, 'MP':4, 'PR':78, 'UM':9, 'VI':3}
+# 2020-11-23: Data has 3,142 counties (1 diff to expected 3,143) with 0 duplicates
+counties_total = 3243  # ref Wikipedia for counties and equivalents
+non_states = {'AS': 5, 'GU': 1, 'MP': 4, 'PR': 78, 'UM': 9, 'VI': 3}
 exp_counties_n = counties_total - sum(non_states.values())
 print(f'Data has {num_adm2_uniq:,} counties ({exp_counties_n - num_adm2_uniq:,} ' +
       f'diff to expected {exp_counties_n:,}) with {num_adm2 - num_adm2_uniq:,} duplicates')
@@ -80,23 +82,24 @@ state_county_mults = gdata.loc[(gdata.isin({'state_county': state_county_list}).
                                (gdata.f_code == f_code_seat)]
 num_counties_mult_seats = len(state_county_mults.county.unique())
 
-#2020-11-23: 2,987 seats with 256 counties with no seats, 0 counties with multiple seats, and 0 duplicates
+# 2020-11-23: 2,987 seats with 256 counties with no seats, 0 counties with multiple seats, and 0 duplicates
 print(f'Data has {num_seat_uniq:,} seats with {unit_exp - num_seat_uniq:,} ' +
       f'counties with no seats, {num_counties_mult_seats:,} counties with multiple seats' +
       f', and {num_adm2 - num_adm2_uniq:,} duplicates')
 
 # %% [code]
 # Drop any county for which we have seat information
-cities = gdata.drop(gdata.state_county[gdata.f_code == f_code_county].isin(seat_ids).index, axis=0, inplace=False)
+cities = gdata.drop(gdata.state_county[gdata.f_code == f_code_county].isin(
+    seat_ids).index, axis=0, inplace=False)
 
 # %% [code]
 # Only interested in a tour of the continental 48 plus DC
 keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'ID', 'IL', 'IN', 'IA', 'KS',
-              'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
-              'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA',
-              'WV', 'WI', 'WY']
+               'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
+               'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA',
+               'WV', 'WI', 'WY']
 cities.drop(cities.loc[~cities.isin({'state': keep_states}).state].index, axis=0, inplace=True)
-#2020-11-23: Looking to visit 2,975 counties
+# 2020-11-23: Looking to visit 2,975 counties
 print(f'Looking to visit {len(cities):,} counties')
 
 # %% [code]
@@ -120,7 +123,7 @@ start_gid = 5110302
 # Rotate tour so that starting point is first
 tour_route = tour_data.tour
 while cities.gid.iloc[tour_route[0]] != start_gid:
-        tour_route = np.append(tour_route[1:], tour_route[:1])
+    tour_route = np.append(tour_route[1:], tour_route[:1])
 
 # %% [code]
 # Save tour to output file
@@ -146,10 +149,12 @@ palette = [clrs.to_hex(p) for p in palette]
 # %% [code]
 # Add markers at start and end of tour
 name = f'Start tour at {cities.name.iloc[tour_route[0]]}, {cities.state.iloc[tour_route[0]]}'
-folium.Marker(points[0], popup=str(name), icon=folium.Icon(color='blue',icon_color=palette[0])).add_to(my_map)
+folium.Marker(points[0], popup=str(name), icon=folium.Icon(
+    color='blue', icon_color=palette[0])).add_to(my_map)
 
 name = f'Finish tour at {cities.name.iloc[tour_route[-1]]},, {cities.state.iloc[tour_route[-1]]} which is stop {len(cities):,}'
-folium.Marker(points[-1], popup=str(name), icon=folium.Icon(color='darkred',icon_color=palette[-1])).add_to(my_map)
+folium.Marker(points[-1], popup=str(name), icon=folium.Icon(color='darkred',
+                                                            icon_color=palette[-1])).add_to(my_map)
 
 # And at stops inbetween
 city_interval = round(len(cities)/markers_n)
@@ -157,9 +162,10 @@ for mkr in range(1, markers_n):
     stop_n = mkr*city_interval
     name = f'{cities.name.iloc[tour_route[stop_n]]}, {cities.state.iloc[tour_route[stop_n]]} is stop {stop_n:,}'
     icolor = palette[mkr]
-    folium.Marker(points[stop_n], popup=str(name), icon=folium.Icon(color='cadetblue',icon_color=icolor)).add_to(my_map)
+    folium.Marker(points[stop_n], popup=str(name), icon=folium.Icon(
+        color='cadetblue', icon_color=icolor)).add_to(my_map)
 
-#fadd lines
+# fadd lines
 folium.PolyLine(points, color="red", weight=2.5, opacity=1).add_to(my_map)
 
 # Display the map
