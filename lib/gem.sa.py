@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+from os.path import join
+from simanneal import Annealer
+from datetime import datetime
+from collections import defaultdict
 
 import csv
 import math
 import random
 import tools as gem
 
-from collections import defaultdict
-from datetime import datetime
-from simanneal import Annealer
-from os.path import join
 
 def distance(a, b):
     """Calculates distance between two latitude-longitude coordinates."""
     R = 3963  # radius of Earth (miles)
     lat1, lon1 = math.radians(a[0]), math.radians(a[1])
     lat2, lon2 = math.radians(b[0]), math.radians(b[1])
-    return math.acos(math.sin(lat1) * math.sin(lat2) +
-                     math.cos(lat1) * math.cos(lat2) * math.cos(lon1 - lon2)) * R
+    return math.acos(math.sin(lat1) * math.sin(lat2) + math.cos(lat1) * math.cos(lat2) * math.cos(lon1-lon2)) * R
 
 
 class TravellingSalesmanProblem(Annealer):
@@ -70,7 +69,6 @@ if __name__ == '__main__':
     cands_dict = gem.dict_data(cands_drop[['v_id', 'v_lat', 'v_lon']])
     cities = cands_dict
 
-
     # initial state, a randomly-ordered itinerary
     init_state = list(cities)
     random.shuffle(init_state)
@@ -97,6 +95,9 @@ if __name__ == '__main__':
     # while state[0] != 'New York City':
     #     state = state[1:] + state[:1]  # rotate NYC to start
 
+    for num in [1, 2, 3, 4]:
+        print(num)
+
     print()
     print("%i mile route:" % e)
     # print(" -->  ".join(state))
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     # file = 'anneal_out_20201119_170000.csv'
     # outfile_fp = join(data_dir, file)
     tour = gem.gather_tour(outfile_fp, cands)
-    tour.drop(['county_name', 'county_lat', 'county_lon', 'state', 'admin2_code',
-               'county_geoid', 'seat_name', 'seat_lat', 'seat_lon', 'seat_geoid',
-               'v_id'], axis=1, inplace=True)
+    tour.drop(['county_name', 'county_lat', 'county_lon', 'state',
+               'admin2_code', 'county_geoid', 'seat_name', 'seat_lat',
+               'seat_lon', 'seat_geoid', 'v_id'], axis=1, inplace=True)
     gem.plot_path(tour)

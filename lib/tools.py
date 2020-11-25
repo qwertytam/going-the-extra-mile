@@ -11,7 +11,8 @@ import numpy as np
 import pylab as pl
 
 import matplotlib.pyplot as plt
-from matplotlib import collections  as mc
+from matplotlib import collections as mc
+
 
 def getcounties(file):
     """Returns a panda of county data
@@ -70,13 +71,14 @@ def join_counties_seats(counties, county_seats):
     cands = pd.merge(counties, county_seats, how='left',
                      on=['state', 'admin2_code'], suffixes=('_c', '_cs'))
 
-    cands.columns = ['county_name','county_lat', 'county_lon', 'state',
+    cands.columns = ['county_name', 'county_lat', 'county_lon', 'state',
                      'admin2_code', 'county_geoid', 'seat_name', 'seat_lat',
                      'seat_lon', 'seat_geoid']
     # cands.drop(['county_geoid', 'admin2_code', 'seat_geoid'],
     #                         axis=1, inplace=True)
 
     return cands
+
 
 def visit_data(cands):
     """Returns a panda of county and county seat data with visit name, latitude
@@ -100,15 +102,16 @@ def visit_data(cands):
     cands['v_lon'] = cands['county_lon']
 
     cands.loc[cands['seat_geoid'].notna(), 'v_id'] = cands.loc[
-                                        cands['seat_geoid'].notna(), 'seat_geoid']
+        cands['seat_geoid'].notna(), 'seat_geoid']
     cands.loc[cands['seat_name'].notna(), 'v_name'] = cands.loc[
-                                        cands['seat_name'].notna(), 'seat_name']
+        cands['seat_name'].notna(), 'seat_name']
     cands.loc[cands['seat_lat'].notna(), 'v_lat'] = cands.loc[
-                                        cands['seat_lat'].notna(), 'seat_lat']
+        cands['seat_lat'].notna(), 'seat_lat']
     cands.loc[cands['seat_lon'].notna(), 'v_lon'] = cands.loc[
-                                        cands['seat_lon'].notna(), 'seat_lon']
+        cands['seat_lon'].notna(), 'seat_lon']
 
     return cands
+
 
 def dict_data(cands):
     """Returns a dictionary of visit id as string, latitude and longitude
@@ -129,6 +132,7 @@ def dict_data(cands):
     dict = cands.set_index(['v_id']).T.to_dict(orient='list')
     return dict
 
+
 def rand_slice(cands, rand):
     """Returns a slice of the data frame from rand randomy chosen
 
@@ -148,6 +152,7 @@ def rand_slice(cands, rand):
 
     return rand_slice
 
+
 def gather_tour(file, cands):
     """Returns a slice of the data frame from rand randomy chosen
 
@@ -165,7 +170,7 @@ def gather_tour(file, cands):
     """
     tour_gids = pd.read_csv(file, header=0)
     tour_merge = pd.merge(tour_gids, cands, how='left',
-                     left_on=['v_ids'], right_on=['v_id'])
+                          left_on=['v_ids'], right_on=['v_id'])
 
     return tour_merge
 
@@ -186,9 +191,10 @@ def plot_path(tour):
         The panda of length rand
     """
 
-    lines = [[(tour.v_lon[i],tour.v_lat[i]),(tour.v_lon[i+1],tour.v_lat[i+1])] for i in range(0,len(tour)-1)]
+    lines = [[(tour.v_lon[i], tour.v_lat[i]), (tour.v_lon[i+1], tour.v_lat[i+1])]
+             for i in range(0, len(tour)-1)]
     lc = mc.LineCollection(lines, linewidths=2)
-    fig, ax = pl.subplots(figsize=(10,5))
+    fig, ax = pl.subplots(figsize=(10, 5))
     ax.set_aspect('equal')
     ax.add_collection(lc)
     ax.autoscale()
