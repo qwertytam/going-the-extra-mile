@@ -25,9 +25,9 @@ solver = TSPSolver.from_data(
 
 # Find tour
 t = datetime.now()
-tour_data = solver.solve(verbose=False, random_seed=42)
+tour_data = solver.solve(time_bound=-1, verbose=True, random_seed=42)
 print(f'Tour found in {(datetime.now() - t)} and was solver successful?'
-      + ' {tour_data.success}')
+      + f' {tour_data.success}')
 
 # gid for starting in Brooklyn, NY
 start_gid = 5110302
