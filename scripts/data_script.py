@@ -1,204 +1,108 @@
 """Geonames Data Gathering
 
-This script downloads, cleans and gathers county and seat data from
-Geonames. The data is saved as `.csv` files in the `.\data` folder.
-The script will overwrite currently exisiting `.csv` files with the
-same name (see below) in the `.\data` folder.
+This script downloads, cleans and gathers county and seat data from Geonames.
+The data is saved as a .csv file in the data folder. The script will
+overwrite currently exisiting .csv files with the same name (see below) in the
+data folder.
 
-The three csv files created are:
-    * counties.csv - county name, latitude, longitude, state, and
-    geoname database id
-    * seats.csv - seat name, latitude, longitude, state,
-    corresponding county geoname database id, and the seats' geoname
-    database id
-    * stops.csv - by default the county name, latitude, longitude, and
-    geoname database id; but if the county has a seat, then the
-    corresponding information for each county seat
+The csv file seats_and_counties.csv contains the following columns: county or
+    seat name, latitude, longitude, state, and geoname database id
 
-This script requires that csv and sqlite3 be installed within the
-Python environment you are running this script in.
+By default each row is a county. However, where there is a county seat
+identified, then each relevant row is a set, with the corresponding county row
+removed from the data set.
 
-This file can also be imported as a module and contains the following
-functions:
+This file makes use of the functions in the data.py module within this package.
 
-    * get_geoname_data - sources the geoname county and seat data as a
-    sqlite database
-    * get_county_data - gathers the geoname county data into
-    `.\data\counties.csv`
-    * get_county_data - gathers the geoname county seat data into
-    `.\data\seats.csv`
-    * get_stop_data - gathers the geoname county seat data into
-    `.\data\stops.csv`
-    * cleanup_geoname_data - removes downloaded `.zip` and `.txt`
-    files, and removes `.sqlite` databse files created by the `get_*`
-    functions in this file
-    * main - the main function of the script that executes the
-    functions in this file to populate the `.\data` folder
+This specific project is set up to visit every county and equivalent in the
+continental US. Visit is defined as visiting the county seat, and if no
+county seat exists, then the county location as given by geonames.
 
-TODO:
-    * Make script importable as a module
-    * Add functions as per documentation
-    * Revise functionality of script inline wit documentation
 """
 
-import sqlite3
-import csv
+import os.path
+import importlib.util
 
-from os import mkdir, remove
-from os.path import exists, join
-from requests import get
-from zipfile import ZipFile
+spec = importlib.util.spec_from_file_location("data", "../lib/data.py")
+gd = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(gd)
+# foo.MyClass()
+# import data as gd
 
+# Define global variables
 url = 'https://download.geonames.org/export/dump/US.zip'
-data_dir = join('..', 'data')
-zip_fnm = 'US.zip'
-txt_fnm = 'US.txt'
-db_fnm = 'counties.sqlite'
-counties_csv_fnm = 'counties.csv'
-county_seat_csv_fnm = 'county-seats.csv'
+dir = 'E:/GitRepos/going-the-extra-mile/data'
+path = os.path.join(dir, 'seats_and_counties.csv')
+seat_f_code = ['PPLA2']
+county_f_code = ['ADM2']
+codes = seat_f_code + county_f_code
+id_cols = ['state', 'county']
 
-if not exists(data_dir):
-    mkdir(data_dir)
-    print('Created dir {}'.format(data_dir))
+# Download and filter the data
+data = gd.dl_data(url, path, codes)
 
-fp = join(data_dir, zip_fnm)
+# Drop county seats Orange, CA and the Washington Street Courthouse Annex,
+# as they are not county seats ref Wikipedia
+drop_gids = [11497201, 5379513]
+data.drop(data.loc[data.isin(drop_gids).gid].index, axis=0, inplace=True)
 
-with open(fp, 'wb') as f:
-    print('Downloading {}'.format(fp))
-    response = get(url, stream=True)
-    total_length = response.headers.get('content-length')
+# # Oakley, KS is actually the county seat for Logan County,
+# # i.e. for county 109 in KS
+data.at[(data.state == 'KS') & (data.name == 'Oakley')
+        & (data.f_code == seat_f_code[0]), 'county'] = 109
 
-    if total_length is None: # no content length header
-        f.write(response.content)
-    else:
-        dl = 0
-        total_length = int(total_length)
-        for data in response.iter_content(chunk_size=4096):
-            dl += len(data)
-            f.write(data)
-            done = int(50 * dl / total_length)
-            print("\r[{}{}] {}%".format('=' * done, ' ' * (50-done), done * 2), end = '\r')
+data = gd.filter_data(data, path, dflt_fcode=county_f_code,
+                      keep_fcode=seat_f_code, check_id_cols=id_cols)
 
-# Retrieve HTTP meta-data
-print('\nHTTP status {}'.format(response.status_code))
-print('Content type {}'.format(response.headers['content-type']))
-print('Enconding {}\n'.format(response.encoding))
+# Data quality check
+adm2_n = len(data)  # How many rows do we have
+adm2_uniq_n = len(data['state_county'].unique())  # How many duplicates?
 
-with ZipFile(fp, 'r') as zip_ref:
-    print('Unzipping {}'.format(fp))
-    zpath = zip_ref.extract(txt_fnm, path = data_dir)
-    zip_ref.close()
-    print('Extracted {}'.format(zpath))
-remove(fp)
-print('Deleted {}\n'.format(fp))
+counties_total = 3243  # ref Wikipedia for counties and equivalents
+non_states = {'AS': 5, 'GU': 1, 'MP': 4, 'PR': 78, 'UM': 9, 'VI': 3}
+exp_counties_n = counties_total - sum(non_states.values())
 
-infile_fp = join(data_dir, txt_fnm)
-dbfile_fp = join(data_dir, db_fnm)
+# 2020-11-30: Data has 3,142 counties (1 diff to expected 3,143) with 0
+# duplicates
+print(f'Data has {adm2_uniq_n:,} counties'
+      + f' ({exp_counties_n - adm2_uniq_n:,} diff to expected of '
+      + f'{exp_counties_n:,}) '
+      + f'with {adm2_n - adm2_uniq_n:,} duplicates')
 
-# Create table and read data for each county
-with open(infile_fp, encoding='utf8') as incsv:
-    print('Reading {} into county SQL table'.format(infile_fp))
-    reader = csv.reader(incsv, delimiter="\t")
-    conn = sqlite3.connect(dbfile_fp)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE county
-             (name, latitude, longitude, feature_code, subcountry_code, admin2_code, geonameid)''')
-    for geonameid, name, asciiname, alternatenames, latitude, longitude, \
-      featureclass, featurecode, countrycode, cc2, admin1code, admin2code, \
-      admin3code, admin4code, population, elevation, dem, timezone, \
-      modificationdate in reader:
-        feature_class = featureclass
-        feature_code = featurecode
-        country_code = countrycode
-        subcountry_code = admin1code
-        admin2_code = admin2code
-        c.execute("INSERT INTO county VALUES (?, ?, ?, ?, ?, ?, ?)", (name, latitude, longitude, feature_code, subcountry_code, admin2_code, geonameid))
+# How many county seats?
+seat_n = len(data.loc[data.f_code == seat_f_code[0], 'state_county'])
+seat_uniq_n = len(
+    data.loc[data.f_code == seat_f_code[0], 'state_county'].unique())
 
-    c.execute("DELETE FROM county WHERE feature_code <> 'ADM2'")
-    conn.commit()
-    conn.close()
-print('Created and added data to county SQL table\n')
+# Any counties with multiple seats?
+sc_n = data[
+    data.f_code == seat_f_code[0]].groupby(['state_county'])['gid'].count()
+sc_list = list(sc_n.loc[sc_n > 1].index.values)
+sc_mults = data.loc[(data.isin({'state_county': sc_list}).f_code)
+                    & (data.f_code == seat_f_code[0])]
+counties_mult_seats_n = len(sc_mults.county.unique())
 
-# Create table and read data for each county seat
-with open(infile_fp, encoding='utf8') as incsv:
-    print('Reading {} into county_seat SQL table'.format(infile_fp))
-    reader = csv.reader(incsv, delimiter="\t")
-    conn = sqlite3.connect(dbfile_fp)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE county_seat
-             (name, latitude, longitude, feature_code, subcountry_code, admin2_code, geonameid)''')
-    for geonameid, name, asciiname, alternatenames, latitude, longitude, \
-      featureclass, featurecode, countrycode, cc2, admin1code, admin2code, \
-      admin3code, admin4code, population, elevation, dem, timezone, \
-      modificationdate in reader:
-        feature_class = featureclass
-        feature_code = featurecode
-        country_code = countrycode
-        subcountry_code = admin1code
-        admin2_code = admin2code
-        c.execute("INSERT INTO county_seat VALUES (?, ?, ?, ?, ?, ?, ?)", (name, latitude, longitude, feature_code, subcountry_code, admin2_code, geonameid))
+# 2020-11-30: 2,987 seats with 156 counties with no seats, 0 counties with
+# multiple seats, and 0 duplicates
+print(f'Data has {seat_uniq_n:,} '
+      + f'seats with {exp_counties_n - seat_uniq_n:,} '
+      + f'counties with no seats, {counties_mult_seats_n:,} '
+      + 'counties with multiple seats'
+      + f', and {adm2_n - adm2_uniq_n:,} duplicates')
 
-    c.execute("DELETE FROM county_seat WHERE feature_code <> 'PPLA2'")
-    conn.commit()
-    conn.close()
-print('Created and added data to county_seat SQL table\n')
+# Only interested in a tour of the continental 48 plus DC
+keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
+               'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA',
+               'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
+               'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD',
+               'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
+data.drop(data.loc[~data.isin({'state': keep_states}).state].index,
+          axis=0, inplace=True)
 
-# Delete the text file
-remove(infile_fp)
-print('Deleted {}\n'.format(infile_fp))
+# 2020-11-30: Looking to visit 3,108 counties
+print(f'Looking to visit {len(data):,} counties')
 
-# Write the county data to csv file
-outfile_fp = join(data_dir, counties_csv_fnm)
-COUNTY_HEADERS = ['name', 'latitude', 'longitude', 'state',
-'admin2_code', 'geonameid']
-with open(outfile_fp, 'w', encoding='utf8') as outcsv:
-    print('Writing county SQL table to {}'.format(outfile_fp))
-    writer = csv.writer(outcsv, lineterminator="\n")
-    writer.writerow(COUNTY_HEADERS)
-    conn = sqlite3.connect(dbfile_fp)
-    c = conn.cursor()
-    sql = '''SELECT
-                name,
-                latitude,
-                longitude,
-                subcountry_code,
-                admin2_code,
-                geonameid
-             FROM county
-             '''
-    for name, latitude, longitude, subcountry_code, admin2_code, geonameid in c.execute(sql):
-        row = (name, latitude, longitude, subcountry_code, admin2_code, geonameid)
-        writer.writerow(row)
-    conn.close()
-print('Created and added data to {}'.format(outfile_fp))
+gd.write_data(data, path)
 
-# Write the county seat data to csv file
-outfile_fp = join(data_dir, county_seat_csv_fnm)
-COUNTYSEAT_HEADERS = ['name', 'latitude', 'longitude', 'state',
-'admin2_code', 'geonameid']
-with open(outfile_fp, 'w', encoding='utf8') as outcsv:
-    print('Writing county_seat SQL table to {}'.format(outfile_fp))
-    writer = csv.writer(outcsv, lineterminator="\n")
-    writer.writerow(COUNTYSEAT_HEADERS)
-    conn = sqlite3.connect(dbfile_fp)
-    c = conn.cursor()
-    sql = '''SELECT
-                name,
-                latitude,
-                longitude,
-                subcountry_code,
-                admin2_code,
-                geonameid
-             FROM county_seat
-             '''
-    for name, latitude, longitude, subcountry_code, admin2_code, geonameid in c.execute(sql):
-        row = (name, latitude, longitude, subcountry_code, admin2_code, geonameid)
-        writer.writerow(row)
-    conn.close()
-print('Created and added data to {}'.format(outfile_fp))
-
-# Remove the database file
-remove(dbfile_fp)
-print('Deleted {}\n'.format(dbfile_fp))
-
+gd.cleanup_geoname_data(dir)
 print('#<<<<   Script completed   >>>>#')
