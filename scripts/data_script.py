@@ -31,7 +31,8 @@ spec.loader.exec_module(gd)
 
 # Define global variables
 url = 'https://download.geonames.org/export/dump/US.zip'
-dir = 'E:/GitRepos/going-the-extra-mile/data'
+# dir = 'E:/GitRepos/going-the-extra-mile/data'
+dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
 path = os.path.join(dir, 'seats_and_counties.csv')
 seat_f_code = ['PPLA2']
 county_f_code = ['ADM2']
