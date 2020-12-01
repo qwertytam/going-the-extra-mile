@@ -2,16 +2,11 @@
 
 from concorde.tsp import TSPSolver
 from datetime import datetime
-# from matplotlib import collections as mc
-# from matplotlib import colors as clrs
+
 import os.path
-# import folium
 import numpy as np
 import pandas as pd
-# import pylab as pl
-# import seaborn as sns
-# from os import mkdir, remove
-# from os.path import exists, join
+
 
 path = os.path.join('../data', 'seats_and_counties.csv')
 cities = pd.read_csv(path, header=0)
