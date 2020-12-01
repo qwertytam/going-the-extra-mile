@@ -1,0 +1,5 @@
+Task 703: Exit
+Total number of nodes in search tree: 531
+Optimal tour: 110500
+Total Time to solve TSP: 7666.51
+Tour found in 2:13:31.009434 and was solver successful? True
