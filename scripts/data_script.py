@@ -26,8 +26,6 @@ import importlib.util
 spec = importlib.util.spec_from_file_location("data", "../lib/data.py")
 gd = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gd)
-# foo.MyClass()
-# import data as gd
 
 # Define global variables
 url = 'https://download.geonames.org/export/dump/US.zip'
