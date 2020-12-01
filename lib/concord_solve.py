@@ -25,7 +25,7 @@ solver = TSPSolver.from_data(
 
 # Find tour
 t = datetime.now()
-tour_data = solver.solve(time_bound=-1, verbose=True, random_seed=42)
+tour_data = solver.solve(time_bound=-1, verbose=False, random_seed=42)
 print(f'Tour found in {(datetime.now() - t)} and was solver successful?'
       + f' {tour_data.success}')
 
