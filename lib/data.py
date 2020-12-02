@@ -52,6 +52,7 @@ def dl_county_data(url, path):
     # Function local variables
     url_ext = '.zip'
     txt_ext = '.txt'
+    seat_fcode = 'PPLA2'
     keep_fcodes = ['PPLA2', 'ADM2']  # PPLA2 for county, ADM2 for county seat
 
     # csv header names and keep columns
@@ -62,11 +63,12 @@ def dl_county_data(url, path):
     keep_cols = ['gid', 'name', 'lat', 'lon', 'f_class', 'f_code',
                  'country', 'state', 'county']
 
-    # Specify dtype; warning is raised for county, state and county columns if
+    # Specify dtype; warning is raised for country, state and county columns if
     # their type is not specified
-    dyptes = {'gid': int, 'name': str, 'lat': float, 'lon': float,
-              'f_class': str, 'f_code': str, 'country': str, 'state': str,
-              'county': str}
+    dyptes = {'gid': np.int32, 'name': str, 'lat': np.float64,
+              'lon': np.float64, 'f_class': str, 'f_code': str, 'country': str,
+              'state': str, 'county': str}
+    # dyptes = {'country': str, 'state': str, 'county': 'Int64'}
 
     # Check url and path are correct form
     try:
@@ -125,25 +127,37 @@ def dl_county_data(url, path):
         txt_path = zip_ref.extract(txt_fnm, path=dir)
         zip_ref.close()
         print('Extracted {}'.format(txt_path))
-    # txt_path = join(dir, txt_fnm)
 
     # Write the county data to csv file
     data = pd.read_csv(txt_path, names=header_names, header=0, dtype=dyptes,
-                       usecols=keep_cols, delimiter="\t")
+                       usecols=keep_cols, delimiter="\t", na_values=[-1])
 
     # Keep only the geoname feature code(s) of interest
     data.drop(data.loc[~data.isin({'f_code': keep_fcodes}).f_code].index,
               axis=0, inplace=True)
 
-    # Add cat_code for reference and later use to identify county:seat
-    # matchups
-    data['cat_code'] = data[['country', 'state', 'county']].apply(
-        lambda x: (f'{x[0]}.{x[1]}.{x[2]:03d}'), axis=1)
-
     # Name correction in data source
     data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
     data.loc[data['gid'] == 5135484, 'name'] = 'Saint Lawrence County'
 
+    # Drop county seats Orange, CA and the Washington Street Courthouse Annex,
+    # as they are not county seats ref Wikipedia
+    drop_gids = [11497201, 5379513]
+    data.drop(data.loc[data.isin(drop_gids).gid].index, axis=0, inplace=True)
+
+    # # Oakley, KS is actually the county seat for Logan County,
+    # # i.e. for county 109 in KS
+    data.at[(data.state == 'KS') & (data.name == 'Oakley')
+            & (data.f_code == seat_fcode), 'county'] = 109
+
+    # Add cat_code for reference and later use to identify county:seat
+    # matchups
+    data[['county']] = data[['county']].apply(pd.to_numeric)
+
+    data['cat_code'] = data[['country', 'state', 'county']].apply(
+        lambda x: (f'{x[0]}.{x[1]}.{x[2]:03d}'), axis=1)
+
+    write_data(data, path)
     return data
 
 
@@ -177,7 +191,7 @@ def dl_fips_codes(url, path):
     keep_names = ['FIPS_Code', 'State', 'Area_name']
 
     # Specify dtype
-    dyptes = {'FIPS_Code': int, 'State': str, 'Area_name': str}
+    dyptes = {'FIPS_Code': 'Int64', 'State': str, 'Area_name': str}
 
     # Check url and path are correct form
     try:
@@ -295,7 +309,7 @@ def prep_data(data, fips, path):
                       right_on=('name', 'state'), validate='1:1')
 
     # Drop unrequired and/or duplicated columns
-    data.drop(['state', 'name_fips'], axis=1, inplace=True)
+    data.drop(['name'], axis=1, inplace=True)
 
     # If data for county seat exists, use that data for visit; else use
     # county data
