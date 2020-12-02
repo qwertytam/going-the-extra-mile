@@ -7,36 +7,39 @@ the data from https://www.geonames.org/.
 
 This file  contains the following functions:
 
-    * dl_data - downloads the geoname data from the geonames server
-    * filter_data - filters the data as required
+    * dl_county_data - downloads the geoname data from the geonames server
+    * dl_fips_codes - downloads FIPS codes for each county
+    * prep_data - prepares the tour data for calculating the tour
     * write_data - writes given data to a csv file
     * cleanup_geoname_data - removes downloaded zip and txt files
+    * find_tour - find the optimal using the Concorde algorithm
 
 """
 
 import math
-
-# import numpy as np
+import numpy as np
+import os.path
 import pandas as pd
 
+from concorde.tsp import TSPSolver
+from datetime import datetime
 from os import listdir, mkdir, remove
-from os.path import dirname, exists, join
 from re import search, sub
 from requests import get
 from zipfile import ZipFile
 
 
-def dl_data(url, path, geoname_feat_codes):
+def dl_county_data(url, path):
     '''
-    Gathers the county data from the given url and stores it at the given path
+    Gathers the county and seat data from the given url. Adds cat_code
+    (country.state.county) and some data corrections. Writes the corrected data
+    to the the given path and also returns it.
 
     Parameters:
         url (str): A full url to a zip file e.g.
             https://www.data.org/data.zip
         path (str): A full path to a csv file e.g. ../data/data.csv. Will
             create dir and file if they do not exist
-        geoname_feat_codes (list of str): List of geoname feature codes to
-            keep in the output file e.g. ADM2 for administrative level 2
 
     Returns:
         data.frame : Data frame of downloaded data
@@ -48,6 +51,22 @@ def dl_data(url, path, geoname_feat_codes):
 
     # Function local variables
     url_ext = '.zip'
+    txt_ext = '.txt'
+    keep_fcodes = ['PPLA2', 'ADM2']  # PPLA2 for county, ADM2 for county seat
+
+    # csv header names and keep columns
+    header_names = ['gid', 'name', 'asciiname', 'altnames', 'lat', 'lon',
+                    'f_class', 'f_code', 'country', 'alt_country', 'state',
+                    'county', 'admin3', 'admin4', 'popn', 'elev', 'dem', 'tz',
+                    'mod_date']
+    keep_cols = ['gid', 'name', 'lat', 'lon', 'f_class', 'f_code',
+                 'country', 'state', 'county']
+
+    # Specify dtype; warning is raised for county, state and county columns if
+    # their type is not specified
+    dyptes = {'gid': int, 'name': str, 'lat': float, 'lon': float,
+              'f_class': str, 'f_code': str, 'country': str, 'state': str,
+              'county': str}
 
     # Check url and path are correct form
     try:
@@ -71,15 +90,15 @@ def dl_data(url, path, geoname_feat_codes):
     zip_fnm = zip_fnm.group(0)
 
     # Get the text file name we expect to find in the zip file
-    txt_fnm = sub(url_ext, '.txt', zip_fnm)
+    txt_fnm = sub(url_ext, txt_ext, zip_fnm)
 
     # Create dir if it does not exist
-    dir = dirname(path)
-    if not exists(dir):
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
         mkdir(dir)
         print(f'Created dir {dir}')
 
-    zip_path = join(dir, zip_fnm)
+    zip_path = os.path.join(dir, zip_fnm)
     with open(zip_path, 'wb') as f:
         print(f'Downloading {url} to {zip_path}')
         response = get(url, stream=True)
@@ -109,93 +128,188 @@ def dl_data(url, path, geoname_feat_codes):
     # txt_path = join(dir, txt_fnm)
 
     # Write the county data to csv file
-    header_names = ['gid', 'name', 'asciiname', 'altnames', 'lat', 'lon',
-                    'f_class', 'f_code', 'country', 'alt_country', 'state',
-                    'county', 'admin3', 'admin4', 'popn', 'elev', 'dem', 'tz',
-                    'mod_date']
-    keep_cols = ['gid', 'name', 'lat', 'lon', 'f_class', 'f_code',
-                 'country', 'state', 'county']
-
-    # Specify dtype for certain columns to avoid warning; could do it for all
-    # columns, but do not see the need yet
-    dyptes = {'country': str, 'state': str, 'county': str}
     data = pd.read_csv(txt_path, names=header_names, header=0, dtype=dyptes,
                        usecols=keep_cols, delimiter="\t")
 
     # Keep only the geoname feature code(s) of interest
-    data.drop(
-        data.loc[~data.isin({'f_code': geoname_feat_codes}).f_code].index,
-        axis=0, inplace=True)
+    data.drop(data.loc[~data.isin({'f_code': keep_fcodes}).f_code].index,
+              axis=0, inplace=True)
+
+    # Add cat_code for reference and later use to identify county:seat
+    # matchups
+    data['cat_code'] = data[['country', 'state', 'county']].apply(
+        lambda x: (f'{x[0]}.{x[1]}.{x[2]:03d}'), axis=1)
+
+    # Name correction in data source
+    data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
+    data.loc[data['gid'] == 5135484, 'name'] = 'Saint Lawrence County'
+
     return data
 
 
-def filter_data(data, path, dflt_fcode=None,
-                keep_fcode=None, check_id_cols=None):
+def dl_fips_codes(url, path):
     '''
-    Writes the given geoname data to the given path pointing to a csv file.
-    Will prioritise geoname row data that have the keep_fcode feature codes
-    over the dflt_fcode feature codes e.g. priortise county seat data over
-    county data
+    Gathers the FIPS codes for each county from the given url. Performs some
+    data corrections to add missing counties and align the names with the names
+    in the geonmaes data set. Writes the corrected data to the the given path
+    and also returns it.
 
     Parameters:
-        data (data.frame): A data frame with geoname data
+        url (str): A full url to a zip file e.g.
+            https://www.data.org/data.csv
         path (str): A full path to a csv file e.g. ../data/data.csv. Will
             create dir and file if they do not exist
-        dflt_fcode (list of str): List of geoname feature codes to
-            keep if not dropped by keep_fcode e.g. ADM2 for administrative
-            level 2
-        keep_fcode (list of str): List of geoname feature codes to
-            priortise over dflt_fcode e.g. PPLA2 for administrative level 2
-            seats
-        check_id_cols (list of str): The column names to join together and use
-            to decide wether to keep dflt_fcode or keep_fcode rows e.g. could
-            state codes and county codes columns to identify where there is
-            information for a county and its seat present in data
 
     Returns:
-        data.frame : Data frame of filtered data
+        data.frame : Data frame of downloaded data
 
     Raises:
-        Exception: If only one of keep_fcode or check_id_cols is None
+        Exception: url does not point to a csv file
+        Exception: path does not point to a csv file
     '''
 
-    # Check for the ambiguous case where the optional arguments are NOT all
-    # None or all not None i.e. one or more of the arguments have been
-    # specified but at least one of them is None
-    if ((dflt_fcode is None) ^ (keep_fcode is None)) or \
-            ((keep_fcode is None) ^ (check_id_cols is None)):
-        emsg = 'Have specified one of dflt_fcode, keep_fcode or' + \
-            ' check_id_cols whilist the other is None'
-        raise Exception(emsg)
+    # csv header names and keep columns
+    header_names = ['FIPS_Code', 'State', 'Area_name',
+                    'Civilian_labor_force_2011', 'Employed_2011',
+                    'Unemployed_2011', 'Unemployment_rate_2011',
+                    'Median_Household_Income_2011',
+                    'Med_HH_Income_Percent_of_StateTotal_2011']
+    keep_names = ['FIPS_Code', 'State', 'Area_name']
 
-    if check_id_cols is None:
-        id_col_name = None
-    elif len(check_id_cols) == 1:
-        id_col_name = check_id_cols
+    # Specify dtype
+    dyptes = {'FIPS_Code': int, 'State': str, 'Area_name': str}
+
+    # Check url and path are correct form
+    try:
+        error_msg = f'.csv not found before or at end of url: {url}'
+        assert (search(r'\.csv', url).span()[1] == len(url)), error_msg
+    except AttributeError:
+        print(f'.csv not found in url: {url}')
+        raise
     else:
-        # Include a spacer only in between each column name
-        id_col_name = ''.join(
-            map(lambda x: ''+x+'.', check_id_cols[:-1]))+str(check_id_cols[-1])
-        print(f'New column name is {id_col_name}')
+        print('url is correctly formed')
 
-    if check_id_cols is None:
-        id_col_name = None
-    elif len(check_id_cols) > 1:
-        # Include a spacer only in between each column
-        data[id_col_name] = data[check_id_cols].apply(lambda x: ''.join(
-            [str(x[c]) + '.' for c in x.index[:-1]])
-            + str(x[x.index[-1]]), axis=1)
+    try:
+        error_msg = f'.csv not found before or at end of path: {path}'
+        assert (search(r'\.csv', path).span()[1] == len(path)), error_msg
+    except AttributeError:
+        print(f'.csv not found in path: {path}')
+        raise
 
-    # Drop any default row county for which we have keep information
-    if keep_fcode is not None:
-        keep_ids = data.loc[data.isin({'f_code': keep_fcode}).f_code,
-                            id_col_name]
-        keep_id_rows_bool = data[id_col_name].isin(keep_ids)
-        dflt_rows_bool = data.isin({'f_code': dflt_fcode}).f_code
-        data.drop(data.loc[dflt_rows_bool & keep_id_rows_bool].index,
-                  axis=0, inplace=True)
+    fips = pd.read_csv(url, na_values=[' '], names=header_names,
+                       usecols=keep_names, header=0, dtype=dyptes)
 
-    # Write the data to csv
+    # Replace strings to align with what is used in geonames data
+    # St. to Saint
+    pat = r'St\.'
+    repl = 'Saint'
+    fips['Area_name'] = fips.Area_name.str.replace(pat, repl)
+
+    # Position of city
+    # For case when name is one word before city
+    pat = r'^(?P<name>\w+)(\scity)'
+    def replfn(m): return ('City of ' + m.group('name'))
+    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
+
+    # For case when name is two words before city
+    pat = r'^(?P<name>\w+\s\w+)(\scity)'
+    def replfn(m): return ('City of ' + m.group('name'))
+    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
+
+    # Manual adds as not in data source
+    fips.loc[len(fips.index)] = [2158, 'AK', 'Kusilvak Census Area']
+    fips.loc[len(fips.index)] = [15005, 'HI', 'Kalawao County']
+    fips.loc[len(fips.index)] = [46102, 'SD', 'Oglala Lakota County']
+
+    # Manual corrections to align with geonames data
+    fips.loc[fips['FIPS_Code'] == 2105, 'Area_name'] = \
+        'Hoonah-Angoon Census Area'
+    fips.loc[fips['FIPS_Code'] == 2198, 'Area_name'] = \
+        'Prince of Wales-Hyder Census Area'
+    fips.loc[fips['FIPS_Code'] == 2275, 'Area_name'] = \
+        'City and Borough of Wrangell'
+    fips.loc[fips['FIPS_Code'] == 6075, 'Area_name'] = \
+        'City and County of San Francisco'
+    fips.loc[fips['FIPS_Code'] == 11001, 'Area_name'] = 'Washington County'
+    fips.loc[fips['FIPS_Code'] == 17099, 'Area_name'] = 'LaSalle County'
+    fips.loc[fips['FIPS_Code'] == 28033, 'Area_name'] = 'De Soto County'
+    fips.loc[fips['FIPS_Code'] == 29186, 'Area_name'] = \
+        'Sainte Genevieve County'
+    fips.loc[fips['FIPS_Code'] == 2195, 'Area_name'] = 'Petersburg Borough'
+
+    # Update the column names to all lower case
+    fips.columns = ['fips_code', 'state', 'name']
+    write_data(fips, path)
+
+    return fips
+
+
+def prep_data(data, fips, path):
+    '''
+    Prepares data for finding tour with the following operations:
+        * Adds column for FIPS code to match up with json data for mapping
+        * Pivots data so that county and county seats are in separate columns
+        * Adds a series of visit columns, where each entry is county
+        information unless there is seat information in which case the seat
+        information is used
+
+    Parameters:
+        data (data.frame): A data frame of geonames data that contains the
+            county and county seat information
+        fips (data.frame): A data frame of fips code data
+        path (str): A full path to a csv file e.g. ../data/data.csv. Will
+            create dir and file if they do not exist
+
+    Returns:
+        data.frame : Data frame of tour data
+
+    Raises:
+        Exception: path does not point to a csv file
+    '''
+
+    # Function local variables
+    county_fcode = 'ADM2'
+    seat_fcode = 'PPLA2'
+
+    # Split the data and then remerge it, effectively pivoting it into wide
+    # format
+    counties = data.loc[data['f_code'] == county_fcode]
+    seats = data.loc[data['f_code'] == seat_fcode]
+
+    data = counties.merge(seats, how='left', copy=False,
+                          suffixes=('_county', '_seat'), on='cat_code',
+                          validate='1:1')
+
+    # Drop unrequired and/or duplicated columns
+    data.drop(['f_class_county', 'f_code_county', 'country_county',
+               'county_county', 'f_class_seat', 'f_code_seat', 'country_seat',
+               'state_seat', 'county_seat'], axis=1, inplace=True)
+
+    # rename existing columns where appropiate
+    data.rename(columns={'state_county': 'state'}, inplace=True)
+
+    # Merge with the fips data
+    data = data.merge(fips, how='left', copy=False,
+                      suffixes=(None, '_fips'),
+                      left_on=('name_county', 'state'),
+                      right_on=('name', 'state'), validate='1:1')
+
+    # Drop unrequired and/or duplicated columns
+    data.drop(['state', 'name_fips'], axis=1, inplace=True)
+
+    # If data for county seat exists, use that data for visit; else use
+    # county data
+    data['name_visit'] = data[['name_county', 'name_seat']].apply(
+        lambda x: x[1] if type(x[1]) is str else x[0], axis=1)
+
+    data['lat_visit'] = data[['lat_county', 'lat_seat']].apply(
+        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
+    data['lon_visit'] = data[['lon_county', 'lon_seat']].apply(
+        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
+    # Write and return data
+    write_data(data, path)
     return data
 
 
@@ -224,8 +338,8 @@ def write_data(data, path):
         raise
 
     # Create dir if it does not exist
-    dir = dirname(path)
-    if not exists(dir):
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
         mkdir(dir)
         print(f'Created dir {dir}')
 
@@ -250,129 +364,61 @@ def cleanup_geoname_data(dir):
     for ext in rm_exts:
         for item in dir_items:
             if item.endswith(ext):
-                item_pth = join(dir, item)
+                item_pth = os.path.join(dir, item)
                 remove(item_pth)
                 print(f'Removed: {item_pth}')
 
 
-def add_fips_codes():
-    # url = 'https://download.geonames.org/export/dump/US.zip'
-    dir = 'E:/GitRepos/going-the-extra-mile/data'
-    # dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
-    path = join(dir, 'seats_and_counties_v2.csv')
-    seat_f_code = ['PPLA2']
-    county_f_code = ['ADM2']
-    # codes = seat_f_code + county_f_code
-    # id_cols = ['state', 'county']
-    # data = dl_data(url, path, codes)
-    # write_data(data, path)
-    # cleanup_geoname_data(dir)
-    data = pd.read_csv(path)
+def find_tour(data, path):
+    '''
+    Use the Concorde algorithim to find the optimal tour. Returns the tour and
+    saves it to the given path.
 
-    # First get the admin 2 geoname data
-    # url = 'http://download.geonames.org/export/dump/admin2Codes.txt'
-    # header_names = ['cat_code', 'name', 'asciiname', 'gid']
-    # a2codes = pd.read_csv(url, na_values=[' '], names=header_names, sep='\t')
-    # path = join(dir, 'admin2Codes.csv')
-    # a2codes = pd.read_csv(path)
+    Parameters:
+        dir (str): Path to identify items to remove e.g. ../data/
+        path (str): A full path to a csv file e.g. ../data/data.csv. Will
+            create dir and file if they do not exist
 
-    # Get the the FIPS codes
-    url = 'https://raw.githubusercontent.com/python-visualization/folium/' + \
-        'master/examples/data/us_county_data.csv'
-    header_names = ['FIPS_Code', 'State', 'Area_name',
-                    'Civilian_labor_force_2011', 'Employed_2011',
-                    'Unemployed_2011', 'Unemployment_rate_2011',
-                    'Median_Household_Income_2011',
-                    'Med_HH_Income_Percent_of_StateTotal_2011']
-    keep_names = ['FIPS_Code', 'State', 'Area_name']
-    fips = pd.read_csv(url, na_values=[' '], names=header_names,
-                       usecols=keep_names, header=0)
+    Returns:
+        data.frame : Data frame of the optimal tour
 
-    # Replace strings to align with what is used in geonames data
-    # St. to Saint
-    pat = r'St\.'
-    repl = 'Saint'
-    fips['Area_name'] = fips.Area_name.str.replace(pat, repl)
+    Raises:
+        Exception: path does not point to a csv file
+    '''
 
-    # Position of city
-    pat = r'^(?P<name>\w+)(\scity)'
-    def replfn(m): return ('City of ' + m.group('name'))
-    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
+    # Local function variables
+    # gid for starting in Brooklyn, NY; will use this to rotate the tour so
+    # that the starting point is this gid
+    start_gid = 5110302
 
-    pat = r'^(?P<name>\w+\s\w+)(\scity)'
-    def replfn(m): return ('City of ' + m.group('name'))
-    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
+    # Check if path is correct form
+    try:
+        error_msg = f'.csv not found before or at end of path: {path}'
+        assert (search(r'\.csv', path).span()[1] == len(path)), error_msg
+    except AttributeError:
+        print(f'.csv not found in path: {path}')
+        raise
 
-    # Manual adds as not in data source
-    fips.loc[len(fips.index)] = [2158, 'AK', 'Kusilvak Census Area']
-    fips.loc[len(fips.index)] = [15005, 'HI', 'Kalawao County']
-    fips.loc[len(fips.index)] = [46102, 'SD', 'Oglala Lakota County']
+    # Instantiate solver
+    solver = TSPSolver.from_data(
+        data.lat_visit,
+        data.lon_visit,
+        norm="GEO"
+    )
 
-    # Manual corrections
-    fips.loc[fips['FIPS_Code'] == 2105, 'Area_name'] = \
-        'Hoonah-Angoon Census Area'
-    fips.loc[fips['FIPS_Code'] == 2198, 'Area_name'] = \
-        'Prince of Wales-Hyder Census Area'
-    fips.loc[fips['FIPS_Code'] == 2275, 'Area_name'] = \
-        'City and Borough of Wrangell'
-    fips.loc[fips['FIPS_Code'] == 6075, 'Area_name'] = \
-        'City and County of San Francisco'
-    fips.loc[fips['FIPS_Code'] == 11001, 'Area_name'] = 'Washington County'
-    fips.loc[fips['FIPS_Code'] == 17099, 'Area_name'] = 'LaSalle County'
-    fips.loc[fips['FIPS_Code'] == 28033, 'Area_name'] = 'De Soto County'
-    fips.loc[fips['FIPS_Code'] == 29186, 'Area_name'] = \
-        'Sainte Genevieve County'
-    fips.loc[fips['FIPS_Code'] == 2195, 'Area_name'] = 'Petersburg Borough'
+    # Find tour
+    t = datetime.now()
+    tour_data = solver.solve(time_bound=-1, verbose=False, random_seed=42)
+    print(f'\n\n{"~"*80}\n')
+    print(f'Tour found in {(datetime.now() - t)}')
+    print('Solver was successful' if tour_data.success else
+          'Solver was NOT successful')
 
-    # Name correction in data source
-    data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
-    data.loc[data['gid'] == 5135484, 'name'] = 'Saint Lawrence County'
+    # Rotate tour so that starting point is first
+    tour_route = tour_data.tour
+    while data.gid.iloc[tour_route[0]] != start_gid:
+        tour_route = np.append(tour_route[1:], tour_route[:1])
 
-    path = join(dir, 'fips_codes.csv')
-    write_data(fips, path)
-    fips = pd.read_csv(path)
-
-    data['cat_code'] = data[['state', 'county']].apply(
-        lambda x: (f'US.{x[0]}.{x[1]:03d}'), axis=1)
-
-    counties = data.loc[data['f_code'] == county_f_code[0]]
-    seats = data.loc[data['f_code'] == seat_f_code[0]]
-
-    data = counties.merge(seats, how='left', copy=False,
-                          suffixes=('_county', '_seat'), on='cat_code')
-    data.drop(['f_class_county', 'f_code_county', 'country_county',
-               'county_county', 'f_class_seat', 'f_code_seat', 'country_seat',
-               'state_seat', 'county_seat'], axis=1, inplace=True)
-    data.rename(columns={'state_county': 'state'}, inplace=True)
-
-    data = data.merge(fips, how='left', copy=False,
-                      suffixes=(None, '_fips'),
-                      left_on=('name_county', 'state'),
-                      right_on=('Area_name', 'State'))
-
-    data.drop(['State', 'Area_name'], axis=1, inplace=True)
-
-    data['name_visit'] = data[['name_county', 'name_seat']].apply(
-        lambda x: x[1] if type(x[1]) is str else x[0], axis=1)
-
-    data['lat_visit'] = data[['lat_county', 'lat_seat']].apply(
-        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
-
-    data['lon_visit'] = data[['lon_county', 'lon_seat']].apply(
-        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
-
-    print('\n#### data 04 ###')
-    print(data)
-    print('\n~~~~~~~~~~~~~~~~~\n')
-
-    dir = 'E:/GitRepos/going-the-extra-mile/data'
-    # dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
-    path = join(dir, 'seats_and_counties_v3.csv')
-    write_data(data, path)
-
-
-#
-#
-# path = join('../data', 'seats_and_counties.csv')
-# data = pd.read_csv(path, header=0)
-add_fips_codes()
+    # Save tour to output file
+    data.iloc[tour_route].to_csv(path)
+    return data.iloc[tour_route]
