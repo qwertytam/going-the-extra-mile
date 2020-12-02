@@ -101,7 +101,7 @@ print('For the continental 48 plus DC, '
       + f'with {visit_nrows - nseats:,} counties with no seats')
 
 # Run solver
-tour = gem.find_tour(visit_data, tour_path)
+tour = gem.find_tour(visit_data, tour_path, -1, 67)
 visit_data.to_csv(tour_path)
 print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
       + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')

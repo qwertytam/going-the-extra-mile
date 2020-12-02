@@ -388,7 +388,7 @@ def cleanup_geoname_data(dir):
                 print(f'Removed: {item_pth}')
 
 
-def find_tour(data, path):
+def find_tour(data, path, time_bound=-1, random_seed=42):
     '''
     Use the Concorde algorithim to find the optimal tour. Returns the tour and
     saves it to the given path.
@@ -397,6 +397,8 @@ def find_tour(data, path):
         dir (str): Path to identify items to remove e.g. ../data/
         path (str): A full path to a csv file e.g. ../data/data.csv. Will
             create dir and file if they do not exist
+        time_bound (int): Time bound in seconds (?) for Concorde algorithim
+        random_seed (int): Random seed for Concorde algorithim
 
     Returns:
         data.frame : Data frame of the optimal tour
@@ -427,7 +429,8 @@ def find_tour(data, path):
 
     # Find tour
     t = datetime.now()
-    tour_data = solver.solve(time_bound=-1, verbose=False, random_seed=42)
+    tour_data = solver.solve(time_bound=time_bound, verbose=False,
+                             random_seed=random_seed)
     print(f'\n\n{"~"*80}\n')
     print(f'Tour found in {(datetime.now() - t)}')
     print(f'{bcolours.OKGREEN}Solver was successful{bcolours.ENDC}'
