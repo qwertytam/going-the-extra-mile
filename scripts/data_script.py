@@ -23,6 +23,12 @@ county seat exists, then the county location as given by geonames.
 import os.path
 import importlib.util
 
+# Class for terminal output colours
+class bcolours:
+    OKGREEN = '\033[92m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+
 print(f'\n\n{"~"*80}\n')
 print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
 
@@ -95,7 +101,8 @@ print('For the continental 48 plus DC, '
       + f'with {visit_nrows - nseats:,} counties with no seats')
 
 # Run solver
-# tour = gem.find_tour(visit_data, tour_path)
+tour = gem.find_tour(visit_data, tour_path)
 visit_data.to_csv(tour_path)
-print(f'{"<"*5}{"-"*5}{" "*22}Script completed{" "*22}{"-"*5}{">"*5}\n\n')
-print(f'\n\n{"~"*80}\n')
+print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
+      + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
+print(f'\n{"~"*80}\n')
