@@ -23,71 +23,58 @@ county seat exists, then the county location as given by geonames.
 import os.path
 import importlib.util
 
+print(f'\n\n{"~"*80}\n')
+print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
+
 spec = importlib.util.spec_from_file_location("data", "../lib/data.py")
-gd = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(gd)
+gem = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(gem)
 
-# Define global variables
-url = 'https://download.geonames.org/export/dump/US.zip'
-# dir = 'E:/GitRepos/going-the-extra-mile/data'
-dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
-path = os.path.join(dir, 'seats_and_counties.csv')
-seat_f_code = ['PPLA2']
-county_f_code = ['ADM2']
-codes = seat_f_code + county_f_code
-id_cols = ['state', 'county']
+# Script variables
+data_in_dir = '../data'
+# data_in_dir = 'E:/GitRepos/going-the-extra-mile/data'
+# data_in_dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
+data_out_dir = '../out'
 
-# Download and filter the data
-data = gd.dl_data(url, path, codes)
+geonames_url = 'https://download.geonames.org/export/dump/US.zip'
+geonames_data_path = os.path.join(data_in_dir, 'geonames_data.csv')
 
-# Drop county seats Orange, CA and the Washington Street Courthouse Annex,
-# as they are not county seats ref Wikipedia
-drop_gids = [11497201, 5379513]
-data.drop(data.loc[data.isin(drop_gids).gid].index, axis=0, inplace=True)
+fips_url = 'https://raw.githubusercontent.com/python-visualization/folium/' + \
+    'master/examples/data/us_county_data.csv'
+fips_path = os.path.join(data_in_dir, 'fips_codes.csv')
 
-# # Oakley, KS is actually the county seat for Logan County,
-# # i.e. for county 109 in KS
-data.at[(data.state == 'KS') & (data.name == 'Oakley')
-        & (data.f_code == seat_f_code[0]), 'county'] = 109
+visit_data_path = os.path.join(data_in_dir, 'visit_data.csv')
 
-data = gd.filter_data(data, path, dflt_fcode=county_f_code,
-                      keep_fcode=seat_f_code, check_id_cols=id_cols)
+tour_path = os.path.join(data_out_dir, 'tour.csv')
+
+# Get and wrangle the data
+geonames_data = gem.dl_county_data(geonames_url, geonames_data_path)
+fips_data = gem.dl_fips_codes(fips_url, fips_path)
+visit_data = gem.prep_data(geonames_data, fips_data, visit_data_path)
+gem.cleanup_geoname_data(data_in_dir)
 
 # Data quality check
-adm2_n = len(data)  # How many rows do we have
-adm2_uniq_n = len(data['state_county'].unique())  # How many duplicates?
+visit_nrows = len(visit_data)  # How many rows do we have
+cc_nunique = len(visit_data['cat_code'].unique())  # How many unique
 
 counties_total = 3243  # ref Wikipedia for counties and equivalents
-non_states = {'AS': 5, 'GU': 1, 'MP': 4, 'PR': 78, 'UM': 9, 'VI': 3}
-exp_counties_n = counties_total - sum(non_states.values())
+non_state_ncounties = {'AS': 5, 'GU': 1, 'MP': 4, 'PR': 78, 'UM': 9, 'VI': 3}
+exp_ncounties = counties_total - sum(non_state_ncounties.values())
 
-# 2020-11-30: Data has 3,142 counties (1 diff to expected 3,143) with 0
+# 2020-12-02: Data has 3,142 counties (1 diff to expected 3,143) with 0
 # duplicates
-print(f'Data has {adm2_uniq_n:,} counties'
-      + f' ({exp_counties_n - adm2_uniq_n:,} diff to expected of '
-      + f'{exp_counties_n:,}) '
-      + f'with {adm2_n - adm2_uniq_n:,} duplicates')
+print(f'Full data set has {cc_nunique:,} counties'
+      + f' ({exp_ncounties - cc_nunique:,} diff to expected of '
+      + f'{exp_ncounties:,}) '
+      + f'with {visit_nrows - cc_nunique:,} duplicates')
 
 # How many county seats?
-seat_n = len(data.loc[data.f_code == seat_f_code[0], 'state_county'])
-seat_uniq_n = len(
-    data.loc[data.f_code == seat_f_code[0], 'state_county'].unique())
+nseats = len(visit_data.loc[~visit_data['name_seat'].isna(), 'name_seat'])
 
-# Any counties with multiple seats?
-sc_n = data[
-    data.f_code == seat_f_code[0]].groupby(['state_county'])['gid'].count()
-sc_list = list(sc_n.loc[sc_n > 1].index.values)
-sc_mults = data.loc[(data.isin({'state_county': sc_list}).f_code)
-                    & (data.f_code == seat_f_code[0])]
-counties_mult_seats_n = len(sc_mults.county.unique())
-
-# 2020-11-30: 2,987 seats with 156 counties with no seats, 0 counties with
+# 2020-12-02: 2,245 seats with 155 counties with no seats, 0 counties with
 # multiple seats, and 0 duplicates
-print(f'Data has {seat_uniq_n:,} '
-      + f'seats with {exp_counties_n - seat_uniq_n:,} '
-      + f'counties with no seats, {counties_mult_seats_n:,} '
-      + 'counties with multiple seats'
-      + f', and {adm2_n - adm2_uniq_n:,} duplicates')
+print(f'Full data set has {nseats:,} seats '
+      + f'with {visit_nrows - nseats:,} counties with no seats')
 
 # Only interested in a tour of the continental 48 plus DC
 keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
@@ -95,13 +82,20 @@ keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
                'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
                'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD',
                'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
-data.drop(data.loc[~data.isin({'state': keep_states}).state].index,
-          axis=0, inplace=True)
+visit_data.drop(
+    visit_data.loc[~visit_data.isin({'state': keep_states}).state].index,
+    axis=0, inplace=True)
 
-# 2020-11-30: Looking to visit 3,108 counties
-print(f'Looking to visit {len(data):,} counties')
+# 2020-12-02: For the continental 48 plus DC, looking to visit 3,108 counties
+# with 133 counties with no seats
+visit_nrows = len(visit_data)
+nseats = len(visit_data.loc[~visit_data['name_seat'].isna(), 'name_seat'])
+print('For the continental 48 plus DC, '
+      + f'looking to visit {visit_nrows:,} counties '
+      + f'with {visit_nrows - nseats:,} counties with no seats')
 
-gd.write_data(data, path)
-
-gd.cleanup_geoname_data(dir)
-print('#<<<<   Script completed   >>>>#')
+# Run solver
+# tour = gem.find_tour(visit_data, tour_path)
+visit_data.to_csv(tour_path)
+print(f'{"<"*5}{"-"*5}{" "*22}Script completed{" "*22}{"-"*5}{">"*5}\n\n')
+print(f'\n\n{"~"*80}\n')
