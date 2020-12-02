@@ -28,6 +28,11 @@ from re import search, sub
 from requests import get
 from zipfile import ZipFile
 
+# Class for terminal output colours
+class bcolours:
+    OKGREEN = '\033[92m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
 
 def dl_county_data(url, path):
     '''
@@ -401,9 +406,9 @@ def find_tour(data, path):
     '''
 
     # Local function variables
-    # gid for starting in Brooklyn, NY; will use this to rotate the tour so
-    # that the starting point is this gid
-    start_gid = 5110302
+    # gid for starting in Kings County, NY (i.e. Brooklyn)
+    # Will use this to rotate the tour so that the starting point is this gid
+    start_gid = 6941775
 
     # Check if path is correct form
     try:
@@ -425,12 +430,13 @@ def find_tour(data, path):
     tour_data = solver.solve(time_bound=-1, verbose=False, random_seed=42)
     print(f'\n\n{"~"*80}\n')
     print(f'Tour found in {(datetime.now() - t)}')
-    print('Solver was successful' if tour_data.success else
-          'Solver was NOT successful')
+    print(f'{bcolours.OKGREEN}Solver was successful{bcolours.ENDC}'
+          if tour_data.success else
+          f'{bcolours.FAIL}Solver was NOT successful{bcolours.ENDC}')
 
     # Rotate tour so that starting point is first
     tour_route = tour_data.tour
-    while data.gid.iloc[tour_route[0]] != start_gid:
+    while data.gid_county.iloc[tour_route[0]] != start_gid:
         tour_route = np.append(tour_route[1:], tour_route[:1])
 
     # Save tour to output file
