@@ -30,7 +30,7 @@ def plot_as_the_crow_flys(data, path):
 
     points = []
     for row in data.itertuples():
-        points.append(tuple([row.lat, row.lon]))
+        points.append(tuple([row.lat_visit, row.lon_visit]))
 
     # Find center for map display
     ave_lat = sum(p[0] for p in points)/len(points)
@@ -43,12 +43,12 @@ def plot_as_the_crow_flys(data, path):
     palette = [clrs.to_hex(p) for p in palette]
 
     # Add markers at start and end of tour
-    name = f'Start tour at {data.name.iloc[0]}, ' + \
+    name = f'Start tour at {data.name_visit.iloc[0]}, ' + \
         f'{data.state.iloc[0]}'
     folium.Marker(points[0], popup=str(name), icon=folium.Icon(
         color='blue', icon_color=palette[0])).add_to(my_map)
 
-    name = f'Finish tour at {data.name.iloc[-1]}, ' \
+    name = f'Finish tour at {data.name_visit.iloc[-1]}, ' \
         + f'{data.state.iloc[-1]} which is stop {len(data):,}'
     folium.Marker(
         points[-1], popup=str(name),
@@ -59,7 +59,7 @@ def plot_as_the_crow_flys(data, path):
     stop_interval = round(len(data)/markers_n)
     for mkr in range(1, markers_n):
         stop_n = mkr * stop_interval
-        name = f'{data.name.iloc[stop_n]}, ' + \
+        name = f'{data.name_visit.iloc[stop_n]}, ' + \
             f'{data.state.iloc[stop_n]} is stop {stop_n:,}'
         icolor = palette[mkr]
         folium.Marker(points[stop_n], popup=str(name), icon=folium.Icon(

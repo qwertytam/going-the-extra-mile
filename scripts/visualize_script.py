@@ -23,12 +23,14 @@ viz = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(viz)
 
 # Define global variables
-header_names = ['gid', 'name', 'lat', 'lon', 'f_class', 'f_code',
-                'country', 'state', 'county', 'state_county']
+header_names = ['gid_county', 'name_county', 'lat_county', 'lon_county',
+                'state', 'cat_code', 'gid_seat', 'name_seat', 'lat_seat',
+                'lon_seat', 'fips_code', 'name_visit', 'lat_visit',
+                'lon_visit']
 map_out_fnm = os.path.join('../out/', 'tour.html')
 
 # Read in the tour data
-data = pd.read_csv('../out/tour.csv', names=header_names, header=0)
+data = pd.read_csv('../out/tour_30.csv', names=header_names, header=0)
 
 # Plot the path as a series of straight lines and save to a html file
 viz.plot_as_the_crow_flys(data, map_out_fnm)
