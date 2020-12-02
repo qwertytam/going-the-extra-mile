@@ -29,10 +29,13 @@ from requests import get
 from zipfile import ZipFile
 
 # Class for terminal output colours
+
+
 class bcolours:
     OKGREEN = '\033[92m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
 
 def dl_county_data(url, path):
     '''
@@ -437,11 +440,13 @@ def find_tour(data, path, time_bound=-1, random_seed=42):
           if tour_data.success else
           f'{bcolours.FAIL}Solver was NOT successful{bcolours.ENDC}')
 
-    # Rotate tour so that starting point is first
+    # # Rotate tour so that starting point is first
     tour_route = tour_data.tour
-    while data.gid_county.iloc[tour_route[0]] != start_gid:
-        tour_route = np.append(tour_route[1:], tour_route[:1])
-
-    # Save tour to output file
-    data.iloc[tour_route].to_csv(path)
-    return data.iloc[tour_route]
+    # while data.gid_county.iloc[tour_route[0]] != start_gid:
+    #     tour_route = np.append(tour_route[1:], tour_route[:1])
+    #
+    # # Save tour to output file
+    # data.iloc[tour_route].to_csv(path)
+    # return data.iloc[tour_route]
+    tour_route.to_csv(path)
+    return tour_route
