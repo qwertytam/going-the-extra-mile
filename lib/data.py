@@ -14,6 +14,9 @@ This file  contains the following functions:
 
 """
 
+import math
+
+# import numpy as np
 import pandas as pd
 
 from os import listdir, mkdir, remove
@@ -172,7 +175,7 @@ def filter_data(data, path, dflt_fcode=None,
     else:
         # Include a spacer only in between each column name
         id_col_name = ''.join(
-            map(lambda x: ''+x+'_', check_id_cols[:-1]))+str(check_id_cols[-1])
+            map(lambda x: ''+x+'.', check_id_cols[:-1]))+str(check_id_cols[-1])
         print(f'New column name is {id_col_name}')
 
     if check_id_cols is None:
@@ -180,7 +183,7 @@ def filter_data(data, path, dflt_fcode=None,
     elif len(check_id_cols) > 1:
         # Include a spacer only in between each column
         data[id_col_name] = data[check_id_cols].apply(lambda x: ''.join(
-            [str(x[c]) + '_' for c in x.index[:-1]])
+            [str(x[c]) + '.' for c in x.index[:-1]])
             + str(x[x.index[-1]]), axis=1)
 
     # Drop any default row county for which we have keep information
@@ -250,3 +253,126 @@ def cleanup_geoname_data(dir):
                 item_pth = join(dir, item)
                 remove(item_pth)
                 print(f'Removed: {item_pth}')
+
+
+def add_fips_codes():
+    # url = 'https://download.geonames.org/export/dump/US.zip'
+    dir = 'E:/GitRepos/going-the-extra-mile/data'
+    # dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
+    path = join(dir, 'seats_and_counties_v2.csv')
+    seat_f_code = ['PPLA2']
+    county_f_code = ['ADM2']
+    # codes = seat_f_code + county_f_code
+    # id_cols = ['state', 'county']
+    # data = dl_data(url, path, codes)
+    # write_data(data, path)
+    # cleanup_geoname_data(dir)
+    data = pd.read_csv(path)
+
+    # First get the admin 2 geoname data
+    # url = 'http://download.geonames.org/export/dump/admin2Codes.txt'
+    # header_names = ['cat_code', 'name', 'asciiname', 'gid']
+    # a2codes = pd.read_csv(url, na_values=[' '], names=header_names, sep='\t')
+    # path = join(dir, 'admin2Codes.csv')
+    # a2codes = pd.read_csv(path)
+
+    # Get the the FIPS codes
+    url = 'https://raw.githubusercontent.com/python-visualization/folium/' + \
+        'master/examples/data/us_county_data.csv'
+    header_names = ['FIPS_Code', 'State', 'Area_name',
+                    'Civilian_labor_force_2011', 'Employed_2011',
+                    'Unemployed_2011', 'Unemployment_rate_2011',
+                    'Median_Household_Income_2011',
+                    'Med_HH_Income_Percent_of_StateTotal_2011']
+    keep_names = ['FIPS_Code', 'State', 'Area_name']
+    fips = pd.read_csv(url, na_values=[' '], names=header_names,
+                       usecols=keep_names, header=0)
+
+    # Replace strings to align with what is used in geonames data
+    # St. to Saint
+    pat = r'St\.'
+    repl = 'Saint'
+    fips['Area_name'] = fips.Area_name.str.replace(pat, repl)
+
+    # Position of city
+    pat = r'^(?P<name>\w+)(\scity)'
+    def replfn(m): return ('City of ' + m.group('name'))
+    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
+
+    pat = r'^(?P<name>\w+\s\w+)(\scity)'
+    def replfn(m): return ('City of ' + m.group('name'))
+    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
+
+    # Manual adds as not in data source
+    fips.loc[len(fips.index)] = [2158, 'AK', 'Kusilvak Census Area']
+    fips.loc[len(fips.index)] = [15005, 'HI', 'Kalawao County']
+    fips.loc[len(fips.index)] = [46102, 'SD', 'Oglala Lakota County']
+
+    # Manual corrections
+    fips.loc[fips['FIPS_Code'] == 2105, 'Area_name'] = \
+        'Hoonah-Angoon Census Area'
+    fips.loc[fips['FIPS_Code'] == 2198, 'Area_name'] = \
+        'Prince of Wales-Hyder Census Area'
+    fips.loc[fips['FIPS_Code'] == 2275, 'Area_name'] = \
+        'City and Borough of Wrangell'
+    fips.loc[fips['FIPS_Code'] == 6075, 'Area_name'] = \
+        'City and County of San Francisco'
+    fips.loc[fips['FIPS_Code'] == 11001, 'Area_name'] = 'Washington County'
+    fips.loc[fips['FIPS_Code'] == 17099, 'Area_name'] = 'LaSalle County'
+    fips.loc[fips['FIPS_Code'] == 28033, 'Area_name'] = 'De Soto County'
+    fips.loc[fips['FIPS_Code'] == 29186, 'Area_name'] = \
+        'Sainte Genevieve County'
+    fips.loc[fips['FIPS_Code'] == 2195, 'Area_name'] = 'Petersburg Borough'
+
+    # Name correction in data source
+    data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
+    data.loc[data['gid'] == 5135484, 'name'] = 'Saint Lawrence County'
+
+    path = join(dir, 'fips_codes.csv')
+    write_data(fips, path)
+    fips = pd.read_csv(path)
+
+    data['cat_code'] = data[['state', 'county']].apply(
+        lambda x: (f'US.{x[0]}.{x[1]:03d}'), axis=1)
+
+    counties = data.loc[data['f_code'] == county_f_code[0]]
+    seats = data.loc[data['f_code'] == seat_f_code[0]]
+
+    data = counties.merge(seats, how='left', copy=False,
+                          suffixes=('_county', '_seat'), on='cat_code')
+    data.drop(['f_class_county', 'f_code_county', 'country_county',
+               'county_county', 'f_class_seat', 'f_code_seat', 'country_seat',
+               'state_seat', 'county_seat'], axis=1, inplace=True)
+    data.rename(columns={'state_county': 'state'}, inplace=True)
+
+    data = data.merge(fips, how='left', copy=False,
+                      suffixes=(None, '_fips'),
+                      left_on=('name_county', 'state'),
+                      right_on=('Area_name', 'State'))
+
+    data.drop(['State', 'Area_name'], axis=1, inplace=True)
+
+    data['name_visit'] = data[['name_county', 'name_seat']].apply(
+        lambda x: x[1] if type(x[1]) is str else x[0], axis=1)
+
+    data['lat_visit'] = data[['lat_county', 'lat_seat']].apply(
+        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
+    data['lon_visit'] = data[['lon_county', 'lon_seat']].apply(
+        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
+    print('\n#### data 04 ###')
+    print(data)
+    print('\n~~~~~~~~~~~~~~~~~\n')
+
+    dir = 'E:/GitRepos/going-the-extra-mile/data'
+    # dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
+    path = join(dir, 'seats_and_counties_v3.csv')
+    write_data(data, path)
+
+
+#
+#
+# path = join('../data', 'seats_and_counties.csv')
+# data = pd.read_csv(path, header=0)
+add_fips_codes()
