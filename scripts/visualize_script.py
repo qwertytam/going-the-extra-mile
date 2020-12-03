@@ -18,6 +18,18 @@ import os.path
 import pandas as pd
 import importlib.util
 
+# Class for terminal output colours
+
+
+class bcolours:
+    OKGREEN = '\033[92m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+
+
+print(f'\n\n{"~"*80}\n')
+print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
+
 spec = importlib.util.spec_from_file_location("data", "../lib/visualize.py")
 viz = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(viz)
@@ -45,3 +57,7 @@ my_map = viz.init_map(tour)
 my_map = viz.plot_as_the_crow_flys(tour, my_map)
 my_map = viz.plot_circles(tour, my_map, 1000)
 my_map.save(map_out_fnm)
+
+print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
+      + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
+print(f'\n{"~"*80}\n')
