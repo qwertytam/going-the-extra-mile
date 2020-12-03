@@ -442,11 +442,10 @@ def find_tour(data, path, time_bound=-1, random_seed=42):
 
     # # Rotate tour so that starting point is first
     tour_route = tour_data.tour
-    # while data.gid_county.iloc[tour_route[0]] != start_gid:
-    #     tour_route = np.append(tour_route[1:], tour_route[:1])
-    #
-    # # Save tour to output file
-    # data.iloc[tour_route].to_csv(path)
-    # return data.iloc[tour_route]
-    tour_route.to_csv(path)
-    return tour_route
+    while data.gid_county.iloc[tour_route[0]] != start_gid:
+        tour_route = np.append(tour_route[1:], tour_route[:1])
+
+    # Save tour to output file
+    data_out = data.iloc[tour_route]
+    data_out.to_csv(path)
+    return data_out
