@@ -29,7 +29,7 @@ header_names = ['gid_county', 'name_county', 'lat_county', 'lon_county',
                 'lon_visit']
 map_out_fnm = os.path.join('../out/', 'tour.html')
 
-# Read in the tour data
+# Read in the tour data.
 tour = pd.read_csv('../out/tour.csv', names=header_names, header=0)
 
 # Plot the path as a series of straight lines and save to a html file
