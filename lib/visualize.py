@@ -105,7 +105,7 @@ def plot_coloured_counties(tour, path, my_map):
     colorscale = branca.colormap.LinearColormap(
         colors=('r', 'g'), vmin=0, vmax=len(tour)).to_step(n=500)
     tour_series = pd.Series(data=tour.index, index=tour.fips_code)
-    print(len(tour))
+    
     def style_function(feature):
         order = tour_series.get(int(feature['id'][-5:]), None)
 
