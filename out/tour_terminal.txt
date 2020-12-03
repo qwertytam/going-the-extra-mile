@@ -1,10 +1,10 @@
-Task 786: Exit
-Total number of nodes in search tree: 431
+Task 973: Exit
+Total number of nodes in search tree: 659
 Optimal tour: 110500
-Total Time to solve TSP: 8639.84
+Total Time to solve TSP: 13672.54
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Tour found in 2:31:50.620618
+Tour found in 3:59:42.793283
 Solver was successful
