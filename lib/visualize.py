@@ -103,14 +103,15 @@ def plot_coloured_counties(tour, path, my_map):
     county_geo = f'{url}/us_counties_20m_topo.json'
 
     colorscale = branca.colormap.LinearColormap(
-        colors=('g', 'b', 'r'), vmin=0, vmax=len(tour)).to_step(n=100)
+        colors=('r', 'g'), vmin=0, vmax=len(tour)).to_step(n=500)
     tour_series = pd.Series(data=tour.index, index=tour.fips_code)
-
+    print(len(tour))
     def style_function(feature):
         order = tour_series.get(int(feature['id'][-5:]), None)
+
         return {
-            'fillOpacity': 0.0 if order is None else 0.5,
-            'weight': 0,
+            'fillOpacity': 0.0 if order is None else 0.7,
+            'weight': 0.0,
             'fillColor': '#black' if order is None else colorscale(order)
         }
 
