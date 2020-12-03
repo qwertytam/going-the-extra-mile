@@ -12,7 +12,11 @@ Functions include:
 
 from matplotlib import colors as clrs
 
+import branca
 import folium
+import json
+import pandas as pd
+import requests
 import seaborn as sns
 
 
@@ -26,6 +30,9 @@ def plot_as_the_crow_flys(data, path):
         data (data.frame): A data frame with tour data
         path (str): A full path to a html file e.g. ../out/map.html to save
             the map to
+
+    Returns:
+        map : folium map object of tour with plotted path
     '''
 
     points = []
@@ -73,3 +80,50 @@ def plot_as_the_crow_flys(data, path):
 
     # Save map
     my_map.save(path)
+
+    return my_map
+
+
+def plot_coloured_counties(tour, path, my_map):
+    '''
+    Displays the given tour data on an open map using the folium library.
+    The tour is diplayed as a series of inter-connected as the crow flys
+    points i.e. straight lines between each point.
+
+    Parameters:
+        data (data.frame): A data frame with tour data
+        path (str): A full path to a html file e.g. ../out/map.html to save
+            the map to
+
+    Returns:
+        map : folium map object of tour with coloured counties
+    '''
+    url = 'https://raw.githubusercontent.com/python-visualization/folium/' + \
+        'master/examples/data'
+    county_geo = f'{url}/us_counties_20m_topo.json'
+
+    colorscale = branca.colormap.LinearColormap(
+        colors=('g', 'b', 'r'), vmin=0, vmax=len(tour)).to_step(n=100)
+    tour_series = pd.Series(data=tour.index, index=tour.fips_code)
+
+    def style_function(feature):
+        order = tour_series.get(int(feature['id'][-5:]), None)
+        return {
+            'fillOpacity': 0.0 if order is None else 0.5,
+            'weight': 0,
+            'fillColor': '#black' if order is None else colorscale(order)
+        }
+
+    folium.TopoJson(
+        json.loads(requests.get(county_geo).text),
+        'objects.us_counties_20m',
+        style_function=style_function
+    ).add_to(my_map)
+
+    # Display the map
+    # my_map  # Commented out as not sure how to display map
+
+    # Save map
+    my_map.save(path)
+
+    return my_map

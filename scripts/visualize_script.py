@@ -30,7 +30,8 @@ header_names = ['gid_county', 'name_county', 'lat_county', 'lon_county',
 map_out_fnm = os.path.join('../out/', 'tour.html')
 
 # Read in the tour data
-data = pd.read_csv('../out/tour_30.csv', names=header_names, header=0)
+tour = pd.read_csv('../out/tour.csv', names=header_names, header=0)
 
 # Plot the path as a series of straight lines and save to a html file
-viz.plot_as_the_crow_flys(data, map_out_fnm)
+my_map = viz.plot_as_the_crow_flys(tour, map_out_fnm)
+my_map = viz.plot_coloured_counties(tour, map_out_fnm, my_map)
