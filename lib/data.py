@@ -148,6 +148,21 @@ def dl_county_data(url, path):
     data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
     data.loc[data['gid'] == 5135484, 'name'] = 'Saint Lawrence County'
 
+    # Add county seat for Inyo County, CA
+    # The default county lat/lon coordinates
+    new_data = pd.DataFrame({'gid': 9999999,
+                             'name': 'Independence',
+                             'lat': 36.802778,
+                             'lon': -118.2,
+                             'f_class': 'P',
+                             'f_code': 'PPLA2',
+                             'country': 'US',
+                             'state': 'CA',
+                             'county': 27,
+                             'cat_code': 'US.CA.027'})
+
+    data = data.append(new_data)
+
     # Drop county seats Orange, CA and the Washington Street Courthouse Annex,
     # as they are not county seats ref Wikipedia
     drop_gids = [11497201, 5379513]
