@@ -2,83 +2,19 @@
 <html>
 <head>
     <title>Going the Extra Mile: Visiting Every US County in the Lower 48</title>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-    <script
-    src="https://maps.googleapis.com/maps/api/js?key=APIKEY&callback=initMap&libraries=&v=weekly"
-    defer
-    >
+    <script src='https://polyfill.io/v3/polyfill.min.js?features=default'></script>
+    <script src='./config.js'></script>
+    <div id='gmap-api'></div>
+    <script type='text/javascript'>
+        const apiKey = config.apiKey;
+        const srcStart = 'https://maps.googleapis.com/maps/api/js?key=';
+        const srcEnd = '&callback=initMap&libraries=&v=weekly';
+        const srcStr = '<src="' + srcStart + apiKey + srcEnd + '" defer/>';
+        console.log('srcStr:: ' + srcStr);
+        document.getElementById('gmap-api').innerHTML = srcStr;
     </script>
-    <style type="text/css">
-    #msgs {
-        font-family: "Roboto", "sans-serif";
-        line-height: 30px;
-        padding-left: 10px;
-        padding-right: 10px;
-        padding-bottom: 10px;
-        padding-top: 10px;
-    }
-
-    #msgs i {
-        font-size: 12px;
-    }
-
-    html,
-    body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    #map {
-        height: 70%;
-        width: 100%;
-    }
-
-    #msgs {
-        margin: 20px;
-        border-width: 2px;
-        width: 100%;
-        height: 100px;
-        float: left;
-        text-align: left;
-        padding-top: 0;
-    }
-
-    </style>
-    <script>
-    // Delay time in milliseconds
-    var delay = 100;
-    var subset = 0;
-    var routes_list = []
-    var optRoute = [
-        {location: {lat: 40.6501, lng: -73.94958}},
-        {location: {lat: 41.1476, lng: -73.98931}},
-        {location: {lat: 40.78343, lng: -73.96625}},
-        {location: {lat: 40.79677, lng: -74.48154}},
-        {location: {lat: 40.82982, lng: -75.07767}},
-        {location: {lat: 41.32232, lng: -74.80239}},
-        {location: {lat: 41.57676, lng: -75.25879}},
-        {location: {lat: 41.65565, lng: -74.68933}},
-    ];
-
-    function initMap() {
-        const directionsService = new google.maps.DirectionsService();
-        const map = new google.maps.Map(document.getElementById("map"), {
-            zoom: 4,
-            center: { lat: 41.85, lng: -87.65 },
-            noClear: true,
-        });
-    }
-
-    function calcRoute() {
-
-    }
-
-    function createRoutes() {
-
-    }
-
-    </script>
+    <link rel="stylesheet" href="mapstyle.css">
+    <script src="./map.js"></script>
 </head>
 <body>
     <div id="map"></div>
