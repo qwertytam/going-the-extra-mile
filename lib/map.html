@@ -7,17 +7,21 @@
     <div id='gmap-api'></div>
     <script type='text/javascript'>
         const apiKey = config.apiKey;
-        const srcStart = 'https://maps.googleapis.com/maps/api/js?key=';
-        const srcEnd = '&callback=initMap&libraries=&v=weekly';
-        const srcStr = '<src="' + srcStart + apiKey + srcEnd + '" defer/>';
+        const urlStart = 'https://maps.googleapis.com/maps/api/js?key=';
+        const urlEnd = '&callback=initMap&libraries=&v=weekly';
+        // const urlEnd = '&libraries=&v=weekly';
+        // const srcStr = '<src="' + srcStart + apiKey + srcEnd + '" defer/>';
+        const srcStr = '<script defer src="' + urlStart + apiKey + urlEnd + '"><\/script>';
         console.log('srcStr:: ' + srcStr);
         document.getElementById('gmap-api').innerHTML = srcStr;
     </script>
     <link rel="stylesheet" href="mapstyle.css">
     <script src="./map.js"></script>
+    <!-- <script type='text/javascript'>
+        initMap();
+    </script> -->
 </head>
 <body>
     <div id="map"></div>
-    <div id="msgs"></div>
 </body>
 </html>
