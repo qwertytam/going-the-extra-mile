@@ -1,0 +1,34 @@
+#msgs {
+    font-family: "Roboto", "sans-serif";
+    line-height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-top: 10px;
+}
+
+#msgs i {
+    font-size: 12px;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    height: 70%;
+    width: 100%;
+}
+
+#msgs {
+    margin: 20px;
+    border-width: 2px;
+    width: 100%;
+    height: 100px;
+    float: left;
+    text-align: left;
+    padding-top: 0;
+}
