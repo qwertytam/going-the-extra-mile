@@ -3,6 +3,9 @@ data/*.zip
 data/*.txt
 data/*.sqlite
 
+# Project secrets
+lib/config.js
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
