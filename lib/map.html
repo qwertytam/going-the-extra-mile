@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Going the Extra Mile</title>
-    <link rel='stylesheet' href='map.css'>
+    <link rel='stylesheet' type='text/css' href='./map.css'>
     <script src='https://polyfill.io/v3/polyfill.min.js?features=default'></script>
     <script src='./config.js'></script>
     <script src='./initapi.js'></script>
@@ -11,6 +11,20 @@
 </head>
 <body>
     <div id='map'></div>
-    <div id='msgs'></div>
+    <div id='right-panel'></div>
+        <div>
+            <b>Tour Start: </b>
+            <span id='tour-start'></span>
+            <p>
+                <b>Tour End:</b>
+                <span id='tour-end'></span>
+            </p>
+            <p>
+                <b>Tour Length:</b>
+                <span id='tour-length'></span>
+            </p>
+        </div>
+        <p><b>Tour Stops:</b></p>
+        <div id='route-panel'></div>
 </body>
 </html>
