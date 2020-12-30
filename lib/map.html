@@ -4,8 +4,11 @@
     <title>Going the Extra Mile</title>
     <link rel='stylesheet' type='text/css' href='./map.css'>
     <script src='https://polyfill.io/v3/polyfill.min.js?features=default'></script>
+    <script src="https://unpkg.com/@googlemaps/markerclustererplus/dist/index.min.js"></script>
+    <script src="https://unpkg.com/@googlemaps/markerwithlabel/dist/index.min.js"></script>
     <script src='./config.js'></script>
     <script src='./initapi.js'></script>
+    <script src='./cmap.js'></script>
     <script src='../out/tour.js'></script>
     <script src='./map.js'></script>
 </head>
@@ -13,8 +16,18 @@
     <div id='map'></div>
     <div id='right-panel'></div>
         <div>
-            <b>Tour Start: </b>
-            <span id='tour-start'></span>
+            <p>
+                <b>Progress: </b>
+                <span id='calc-progress'></span>
+            </p>
+            <p>
+                <b>Delay: </b>
+                <span id='calc-delay'></span>
+            </p>
+            <p>
+                <b>Tour Start: </b>
+                <span id='tour-start'></span>
+            </p>
             <p>
                 <b>Tour End:</b>
                 <span id='tour-end'></span>
@@ -23,8 +36,12 @@
                 <b>Tour Length:</b>
                 <span id='tour-length'></span>
             </p>
+            <p>
+                <b>Tour Duration:</b>
+                <span id='tour-duration'></span>
+            </p>
         </div>
-        <p><b>Tour Stops:</b></p>
+        <p><b>Stop#: County Name, State, Seat Name</b></p>
         <div id='route-panel'></div>
 </body>
 </html>
