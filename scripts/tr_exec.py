@@ -28,11 +28,5 @@ if __name__ == '__main__':
 
     tr = tourroute.TourRoute('../out/tour.csv')
     tr_slices = tr.slices()
-
-    # plines_path = '../out/plines.csv'
-    # dist, dur = tourroute.save_polylines(apikey, tr_slices, plines_path)
-
-    dur = -1
-    dist = -1
-
+    dist, dur = tourroute.get_tour_distdur(apikey, tr_slices)
     print(f'Total duration is {dur:,} seconds and distance is {dist:,} metres')

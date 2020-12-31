@@ -104,10 +104,12 @@ class TourSlice():
         self.waypoints = waypoints
 
 
-def save_polylines(apikey, tour_slices, path, overwrite=True, verbose=False):
+def get_tour_distdur(apikey, tour_slices):
     '''
-    Saves the encoded polylines for the given list of TourSlices in the
-    given file path and name.
+    Gets the total tour distance and duration for the given list of TourSlices.
+    Use slices as the Google Maps API can only handle a certain number of
+    waypoints to decode. Hence, if dealing with many points, then slice up the
+    tour into smaller pieces.
 
     Args:
         apikey (str): Google API key to use for the Google Directions
@@ -115,8 +117,6 @@ def save_polylines(apikey, tour_slices, path, overwrite=True, verbose=False):
         tour_slices (list of TourSlice): A list of TourSlices, where each
             slice contains latitude and longitude coordinate tuples for an
             origin, destination and an (optional) list of waypoints
-        overwrite (bool): If given path should be overwritten
-        verbose (bool): Print diagnostic information
 
     Returns:
         dist (numeric): Total distance of the tour_slices in metres
@@ -128,44 +128,19 @@ def save_polylines(apikey, tour_slices, path, overwrite=True, verbose=False):
     tdist = 0
     tdur = 0
     gmaps = googlemaps.Client(key=apikey)
-    path_noresult = path + '_norslt.csv'
-
-    if overwrite & ospath.exists(path):
-        os.remove(path)
-
-    if overwrite & ospath.exists(path_noresult):
-        os.remove(path_noresult)
 
     for tour_slice in tour_slices:
-        dist, dur, plines = get_polylines(gmaps, tour_slice)
-        tdist = tdist + dist
-        tdur = tdur + dur
-        slicei = slicei + 1
-        plines = pd.DataFrame(plines)
-
-        if len(plines) > 0:
-            plines.to_csv(path, index=False, header=False, mode='a')
-
-            if verbose:
-                print(f'Completed slice {slicei:,} of {len(tour_slices):,}')
-        else:
-            nrslt = []
-            nrslt.append(tour_slice.origin)
-            nrslt.append(tour_slice.waypoints)
-            nrslt.append(tour_slice.destination)
-            nrslt = pd.DataFrame(nrslt)
-            nrslt.to_csv(path_noresult, index=False, header=False, mode='a')
-
-            if verbose:
-                print(f'No result for slice {slicei:,} '
-                      + f'of {len(tour_slices):,}')
+        dist, dur  = get_slice_distdur(gmaps, tour_slice)
+        tdist += dist
+        tdur += dur
+        slicei++
 
     return tdist, tdur
 
 
-def get_polylines(gmaps, tour_slice):
+def get_slice_distdur(gmaps, tour_slice):
     '''
-    Gets the encoded polylines for the given tour_slice
+    Get distance and duration for the given tour_slice
 
     Args:
         gmaps (googlemaps Client): An initiated Google Maps Client
@@ -191,7 +166,6 @@ def get_polylines(gmaps, tour_slice):
                                       mode="driving",
                                       units="metric")
 
-    plines = []
     if len(dir_result) == 0:
         print('No direction result found for')
         print(f'origin {tour_slice.origin} and '
@@ -203,13 +177,10 @@ def get_polylines(gmaps, tour_slice):
             dist = leg['distance']['value']
             dur = leg['duration']['value']
 
-            for step in leg['steps']:
-                plines = np.append(plines,
-                                   step['polyline']['points'])
     else:
         print('No `legs` found in dir_result[0] for')
         print(f'origin {tour_slice.origin} and '
               + f'destination {tour_slice.destination}')
         return 0, 0, []
 
-    return dist, dur, plines
+    return dist, dur
