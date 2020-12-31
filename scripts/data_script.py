@@ -1,9 +1,10 @@
-"""Geonames Data Gathering
+"""Tour Data Gathering & Finding
 
-This script downloads, cleans and gathers county and seat data from Geonames.
-The data is saved as a .csv file in the data folder. The script will
-overwrite currently exisiting .csv files with the same name (see below) in the
-data folder.
+This script downloads, cleans and gathers county and seat data from Geonames,
+then finds the optimal route using the Concorde algorithim. The Geonames data is
+saved as a .csv file in the data folder. The script will overwrite currently
+exisiting .csv files with the same name (see below) in the data folder. The
+tour is saved in the out folder, with same caveats on overwriting etc.
 
 The csv file seats_and_counties.csv contains the following columns: county or
     seat name, latitude, longitude, state, and geoname database id
@@ -32,14 +33,22 @@ class bcolours:
 print(f'\n\n{"~"*80}\n')
 print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
 
-spec = importlib.util.spec_from_file_location("data", "../lib/data.py")
-gem = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(gem)
+# Import custom modules
+# Data gatherer
+data_spec = importlib.util.spec_from_file_location("data",
+                                                   "../lib/datagather.py")
+datag = importlib.util.module_from_spec(data_spec)
+data_spec.loader.exec_module(datag)
+
+# Optimal tour finder
+ftour_spec = importlib.util.spec_from_file_location("data",
+                                                   "../lib/findtour.py")
+ftour = importlib.util.module_from_spec(ftour_spec)
+ftour_spec.loader.exec_module(ftour)
+
 
 # Script variables
 data_in_dir = '../data'
-# data_in_dir = 'E:/GitRepos/going-the-extra-mile/data'
-# data_in_dir = '/Users/TomMarshall/github/going-the-extra-mile/data/'
 data_out_dir = '../out'
 
 geonames_url = 'https://download.geonames.org/export/dump/US.zip'
@@ -54,10 +63,10 @@ visit_data_path = os.path.join(data_in_dir, 'visit_data.csv')
 tour_path = os.path.join(data_out_dir, 'tour.csv')
 
 # Get and wrangle the data
-geonames_data = gem.dl_county_data(geonames_url, geonames_data_path)
-fips_data = gem.dl_fips_codes(fips_url, fips_path)
-visit_data = gem.prep_data(geonames_data, fips_data, visit_data_path)
-gem.remove_gndata(data_in_dir)
+geonames_data = datag.dl_county_data(geonames_url, geonames_data_path)
+fips_data = datag.dl_fips_codes(fips_url, fips_path)
+visit_data = datag.prep_data(geonames_data, fips_data, visit_data_path)
+datag.remove_gndata(data_in_dir)
 
 # Data quality check
 visit_nrows = len(visit_data)  # How many rows do we have
@@ -100,8 +109,9 @@ print('For the continental 48 plus DC, '
       + f'looking to visit {visit_nrows:,} counties '
       + f'with {visit_nrows - nseats:,} counties with no seats')
 
-# Run solver
-tour = gem.find_tour(visit_data, tour_path, -1, 67)
+# Run solver the save the optimised tour
+tour = ftour.find_tour(visit_data, -1, 67)
+write_data(tour, tour_path)
 
 print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
       + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
