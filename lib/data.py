@@ -2,16 +2,19 @@
 """Data Gathering
 
 This module contains functions to wrangle the data to visit the desired
-locations. The functions in included here will download, clean and gather
-the data from https://www.geonames.org/.
+locations and generate the optimal tour route. The functions in included here
+will download, clean and gather the data from https://www.geonames.org/.
 
 This file  contains the following functions:
 
     * dl_county_data - downloads the geoname data from the geonames server
+    * _clean_countydata - cleans up known issues in the county data from
+        geonames
     * dl_fips_codes - downloads FIPS codes for each county
+    * _clean_fipsdata - cleans up known issues in the fips code data
     * prep_data - prepares the tour data for calculating the tour
     * write_data - writes given data to a csv file
-    * cleanup_geoname_data - removes downloaded zip and txt files
+    * remove_gndata - removes downloaded zip and txt files from geonames.org
     * find_tour - find the optimal using the Concorde algorithm
 
 """
@@ -40,8 +43,9 @@ class bcolours:
 def dl_county_data(url, path):
     '''
     Gathers the county and seat data from the given url. Adds cat_code
-    (country.state.county) and some data corrections. Writes the corrected data
-    to the the given path and also returns it.
+    (country.state.county) and some data corrections (by
+    `calling _clean_countydata()`). Writes the corrected data to the the given
+    path and also returns it.
 
     Parameters:
         url (str): A full url to a zip file e.g.
@@ -136,13 +140,39 @@ def dl_county_data(url, path):
         zip_ref.close()
         print('Extracted {}'.format(txt_path))
 
-    # Write the county data to csv file
+    # Read in county data from the extracted txt file
     data = pd.read_csv(txt_path, names=header_names, header=0, dtype=dyptes,
                        usecols=keep_cols, delimiter="\t", na_values=[-1])
 
     # Keep only the geoname feature code(s) of interest
     data.drop(data.loc[~data.isin({'f_code': keep_fcodes}).f_code].index,
               axis=0, inplace=True)
+
+    data = _clean_countydata(data)
+
+    # Add cat_code for reference and later use to identify county:seat
+    # matchups
+    data[['county']] = data[['county']].apply(pd.to_numeric)
+
+    data['cat_code'] = data[['country', 'state', 'county']].apply(
+        lambda x: (f'{x[0]}.{x[1]}.{x[2]:03d}'), axis=1)
+
+    write_data(data, path)
+    return data
+
+
+def _clean_countydata(data):
+    '''
+    Cleans up known issues in the county data from geonames.org as of
+    31 December 2020.
+
+    Parameters:
+        data (data.frame): Data frame of county data from geonames
+
+    Returns:
+        data.frame : Data frame of the corrected data
+
+    '''
 
     # Name correction in data source
     data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
@@ -173,23 +203,14 @@ def dl_county_data(url, path):
     data.at[(data.state == 'KS') & (data.name == 'Oakley')
             & (data.f_code == seat_fcode), 'county'] = 109
 
-    # Add cat_code for reference and later use to identify county:seat
-    # matchups
-    data[['county']] = data[['county']].apply(pd.to_numeric)
-
-    data['cat_code'] = data[['country', 'state', 'county']].apply(
-        lambda x: (f'{x[0]}.{x[1]}.{x[2]:03d}'), axis=1)
-
-    write_data(data, path)
     return data
-
 
 def dl_fips_codes(url, path):
     '''
     Gathers the FIPS codes for each county from the given url. Performs some
-    data corrections to add missing counties and align the names with the names
-    in the geonmaes data set. Writes the corrected data to the the given path
-    and also returns it.
+    data corrections to add missing counties (by calling `_clean_fipsdata()`)
+    and align the names with the names in the geonmaes data set. Writes the
+    corrected data to the the given path and also returns it.
 
     Parameters:
         url (str): A full url to a zip file e.g.
@@ -236,43 +257,7 @@ def dl_fips_codes(url, path):
     fips = pd.read_csv(url, na_values=[' '], names=header_names,
                        usecols=keep_names, header=0, dtype=dyptes)
 
-    # Replace strings to align with what is used in geonames data
-    # St. to Saint
-    pat = r'St\.'
-    repl = 'Saint'
-    fips['Area_name'] = fips.Area_name.str.replace(pat, repl)
 
-    # Position of city
-    # For case when name is one word before city
-    pat = r'^(?P<name>\w+)(\scity)'
-    def replfn(m): return ('City of ' + m.group('name'))
-    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
-
-    # For case when name is two words before city
-    pat = r'^(?P<name>\w+\s\w+)(\scity)'
-    def replfn(m): return ('City of ' + m.group('name'))
-    fips['Area_name'] = fips.Area_name.str.replace(pat, replfn)
-
-    # Manual adds as not in data source
-    fips.loc[len(fips.index)] = [2158, 'AK', 'Kusilvak Census Area']
-    fips.loc[len(fips.index)] = [15005, 'HI', 'Kalawao County']
-    fips.loc[len(fips.index)] = [46102, 'SD', 'Oglala Lakota County']
-
-    # Manual corrections to align with geonames data
-    fips.loc[fips['FIPS_Code'] == 2105, 'Area_name'] = \
-        'Hoonah-Angoon Census Area'
-    fips.loc[fips['FIPS_Code'] == 2198, 'Area_name'] = \
-        'Prince of Wales-Hyder Census Area'
-    fips.loc[fips['FIPS_Code'] == 2275, 'Area_name'] = \
-        'City and Borough of Wrangell'
-    fips.loc[fips['FIPS_Code'] == 6075, 'Area_name'] = \
-        'City and County of San Francisco'
-    fips.loc[fips['FIPS_Code'] == 11001, 'Area_name'] = 'Washington County'
-    fips.loc[fips['FIPS_Code'] == 17099, 'Area_name'] = 'LaSalle County'
-    fips.loc[fips['FIPS_Code'] == 28033, 'Area_name'] = 'De Soto County'
-    fips.loc[fips['FIPS_Code'] == 29186, 'Area_name'] = \
-        'Sainte Genevieve County'
-    fips.loc[fips['FIPS_Code'] == 2195, 'Area_name'] = 'Petersburg Borough'
 
     # Update the column names to all lower case
     fips.columns = ['fips_code', 'state', 'name']
@@ -280,6 +265,58 @@ def dl_fips_codes(url, path):
 
     return fips
 
+def _clean_fipsdata(data):
+    '''
+    Cleans up known issues in the fips code data from the github source as of
+    31 December 2020.
+
+    Parameters:
+        data (data.frame): Data frame of fips code data from github source
+
+    Returns:
+        data.frame : Data frame of the corrected data
+
+    '''
+
+    # Replace strings to align with what is used in geonames data
+    # St. to Saint
+    pat = r'St\.'
+    repl = 'Saint'
+    data['Area_name'] = data.Area_name.str.replace(pat, repl)
+
+    # Correct position of city in the county seat name
+    # For case when name is one word before city
+    pat = r'^(?P<name>\w+)(\scity)'
+    def replfn(m): return ('City of ' + m.group('name'))
+    data['Area_name'] = data.Area_name.str.replace(pat, replfn)
+
+    # For case when name is two words before city
+    pat = r'^(?P<name>\w+\s\w+)(\scity)'
+    def replfn(m): return ('City of ' + m.group('name'))
+    data['Area_name'] = data.Area_name.str.replace(pat, replfn)
+
+    # Manual adds as not in data source
+    data.loc[len(data.index)] = [2158, 'AK', 'Kusilvak Census Area']
+    data.loc[len(data.index)] = [15005, 'HI', 'Kalawao County']
+    data.loc[len(data.index)] = [46102, 'SD', 'Oglala Lakota County']
+
+    # Manual corrections to align with geonames data
+    data.loc[data['FIPS_Code'] == 2105, 'Area_name'] = \
+        'Hoonah-Angoon Census Area'
+    data.loc[data['FIPS_Code'] == 2198, 'Area_name'] = \
+        'Prince of Wales-Hyder Census Area'
+    data.loc[data['FIPS_Code'] == 2275, 'Area_name'] = \
+        'City and Borough of Wrangell'
+    data.loc[data['FIPS_Code'] == 6075, 'Area_name'] = \
+        'City and County of San Francisco'
+    data.loc[data['FIPS_Code'] == 11001, 'Area_name'] = 'Washington County'
+    data.loc[data['FIPS_Code'] == 17099, 'Area_name'] = 'LaSalle County'
+    data.loc[data['FIPS_Code'] == 28033, 'Area_name'] = 'De Soto County'
+    data.loc[data['FIPS_Code'] == 29186, 'Area_name'] = \
+        'Sainte Genevieve County'
+    data.loc[data['FIPS_Code'] == 2195, 'Area_name'] = 'Petersburg Borough'
+
+    return data
 
 def prep_data(data, fips, path):
     '''
@@ -385,7 +422,7 @@ def write_data(data, path):
     print(f'Created and added data to {path}')
 
 
-def cleanup_geoname_data(dir):
+def remove_gndata(dir):
     '''
     Removes .zip and .txt files from the given dir
 
