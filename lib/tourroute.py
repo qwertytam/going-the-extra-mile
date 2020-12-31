@@ -54,13 +54,15 @@ class TourRoute():
 
         Optional:
         Args:
-            lgth (int): Length of each slice, default of 10, minimum of 10
+            lgth (int): Length of each slice, default of 10, minimum of 2
 
         Returns:
             slice (list of dict): List of dicts where each dict has keys
                 `origin`, `destination` and `waypoints`. List is ordered
                 whereby each `origin` is the `destination` of the previous item
-                in the list.
+                in the list. `waypoints` is a list. Each point (`origin`,
+                `destiatnion` or any of the items in the `waypoints` list) is a
+                tuple of `('lat_visit', 'lon_visit')`.
         '''
         slice_len = max(2, _get(kwargs, 'lgth', default=10))  # Min length of 2
         slice_list = []
