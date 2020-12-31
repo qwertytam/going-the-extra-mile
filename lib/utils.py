@@ -1,3 +1,17 @@
+# -*- coding: utf-8 -*-
+"""Utilities
+
+This module contains utility type functions of use to the broader modulel.
+
+This file  contains the following functions:
+
+    * _get - Get the value of any of the provided keys for the given dictionary
+
+"""
+
+# Indent level for the source code writer
+_INDENT_LEVEL = 4
+_INDENT = ' ' * _INDENT_LEVEL
 
 def _get(dict, keys, default=None, get_key=False):
     '''
