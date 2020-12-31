@@ -2,7 +2,7 @@
 """Data Gathering
 
 This module contains functions to wrangle the data to visit the desired
-locations and generate the optimal tour route. The functions in included here
+locations. The functions in included here
 will download, clean and gather the data from https://www.geonames.org/.
 
 This file  contains the following functions:
@@ -15,7 +15,6 @@ This file  contains the following functions:
     * prep_data - prepares the tour data for calculating the tour
     * write_data - writes given data to a csv file
     * remove_gndata - removes downloaded zip and txt files from geonames.org
-    * find_tour - find the optimal using the Concorde algorithm
 
 """
 
@@ -24,8 +23,6 @@ import numpy as np
 import os.path
 import pandas as pd
 
-from concorde.tsp import TSPSolver
-from datetime import datetime
 from os import listdir, mkdir, remove
 from re import search, sub
 from requests import get
@@ -441,63 +438,3 @@ def remove_gndata(dir):
                 item_pth = os.path.join(dir, item)
                 remove(item_pth)
                 print(f'Removed: {item_pth}')
-
-
-def find_tour(data, path, time_bound=-1, random_seed=42):
-    '''
-    Use the Concorde algorithim to find the optimal tour. Returns the tour and
-    saves it to the given path.
-
-    Parameters:
-        dir (str): Path to identify items to remove e.g. ../data/
-        path (str): A full path to a csv file e.g. ../data/data.csv. Will
-            create dir and file if they do not exist
-        time_bound (int): Time bound in seconds (?) for Concorde algorithim
-        random_seed (int): Random seed for Concorde algorithim
-
-    Returns:
-        data.frame : Data frame of the optimal tour
-
-    Raises:
-        Exception: path does not point to a csv file
-    '''
-
-    # Local function variables
-    # gid for starting in Kings County, NY (i.e. Brooklyn)
-    # Will use this to rotate the tour so that the starting point is this gid
-    start_gid = 6941775
-
-    # Check if path is correct form
-    try:
-        error_msg = f'.csv not found before or at end of path: {path}'
-        assert (search(r'\.csv', path).span()[1] == len(path)), error_msg
-    except AttributeError:
-        print(f'.csv not found in path: {path}')
-        raise
-
-    # Instantiate solver
-    solver = TSPSolver.from_data(
-        data.lat_visit,
-        data.lon_visit,
-        norm="GEO"
-    )
-
-    # Find tour
-    t = datetime.now()
-    tour_data = solver.solve(time_bound=time_bound, verbose=False,
-                             random_seed=random_seed)
-    print(f'\n\n{"~"*80}\n')
-    print(f'Tour found in {(datetime.now() - t)}')
-    print(f'{bcolours.OKGREEN}Solver was successful{bcolours.ENDC}'
-          if tour_data.success else
-          f'{bcolours.FAIL}Solver was NOT successful{bcolours.ENDC}')
-
-    # # Rotate tour so that starting point is first
-    tour_route = tour_data.tour
-    while data.gid_county.iloc[tour_route[0]] != start_gid:
-        tour_route = np.append(tour_route[1:], tour_route[:1])
-
-    # Save tour to output file
-    data_out = data.iloc[tour_route]
-    data_out.to_csv(path)
-    return data_out
