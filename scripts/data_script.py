@@ -57,7 +57,7 @@ tour_path = os.path.join(data_out_dir, 'tour.csv')
 geonames_data = gem.dl_county_data(geonames_url, geonames_data_path)
 fips_data = gem.dl_fips_codes(fips_url, fips_path)
 visit_data = gem.prep_data(geonames_data, fips_data, visit_data_path)
-gem.cleanup_geoname_data(data_in_dir)
+gem.remove_gndata(data_in_dir)
 
 # Data quality check
 visit_nrows = len(visit_data)  # How many rows do we have
