@@ -10,11 +10,42 @@ from utils import _get
 
 class TourRoute():
     '''
-    Holds the tour route as a series of waypoints from an input csv data
-    file
+    Holds the tour route as a series of waypoints
     '''
 
-    def __init__(self, path):
+    def __init__(self, gid_county=None, name_county=None, lat_county=None,
+                 lon_county=None, state=None, cat_code=None, fips_code=None,
+                 **kwargs):
+        '''
+        Args:
+            gid_county (int): Geonames unique ID for the county
+            name_county (str): County name
+            lat_county (float): County latitude
+            lon_county (float): County longitude
+            state (str): State for the county; typically two letter abbreviation
+            cat_code (str): Category code based on Geonames use. Format is
+                CC.SS.AAA where CC is two letter country abbreviation, SS is
+                two letter state abbreviation and AAA is three digit with
+                leading zeros for the county number within the state e.g.
+                US.NY.047 for Kings County in the state of New York, USA
+            fips_code (int): Federal Information Processing Standards code for
+                each county
+
+        Optional:
+            gid_seat (int): Geonames unique ID for the county seat
+            name_seat (str): County seat name
+            lat_seat (float): Seat latitude
+            lon_seat (float): Seat longitude
+            name_visit (str): Name of the visited point; seat name if available,
+                else county name
+            lat_visit (float): Latitude of the visited point; seat lat if
+                available, else county lat
+            lon_visit (float): Longitude of the visited point; seat lon if
+                available, else county lon
+
+        '''
+
+    def read_csv(self, path):
         '''
         Args:
             path (str): File path and name pointing to input data file
@@ -22,7 +53,8 @@ class TourRoute():
         Usage::
 
             import tourroute
-            tr = tourroute.TourRoute('../data/data_in.csv')
+            tr = tourroute.TourRoute()
+            tr.read_csv('../data/data_in.csv')
             slices = tr.slices(10)
 
         Notes:
@@ -44,7 +76,7 @@ class TourRoute():
         #     seats ([strings]): County seat names for each tour stop point
         # '''
         # self._points = [_format_tour_points(lat, lng, name, state, seat) for lat, lng, name, state, seat in zip(lats, lngs, names, states, seats)]
-        
+
 
     def _get_waypoints(self):
         '''
