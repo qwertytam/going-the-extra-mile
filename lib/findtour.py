@@ -9,6 +9,8 @@ This file  contains the following functions:
 
 """
 
+import numpy as np
+
 from concorde.tsp import TSPSolver
 from datetime import datetime
 
@@ -19,6 +21,7 @@ class bcolours:
     OKGREEN = '\033[92m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
 
 def find_tour(data, time_bound=-1, random_seed=42):
     '''
