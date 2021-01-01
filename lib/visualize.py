@@ -5,9 +5,12 @@ A series of functions to display the optimal tour to visit a series of
 latitude and longitude coordinates
 
 Functions include:
+    * init_map: Initiates a folium map object
     * plot_as_the_crow_flys: Plot a map with each point connected by a
         straight line i.e. as the crow flys
-    * plot_driving: Plot of map with each point connected by driveable roads
+    * plot_markers: Displays the given tour data on an open map using markers
+    * plot_coloured_counties:  Displays the given tour data on an open map
+        using as a series of straight lines between each point
 """
 
 from matplotlib import colors as clrs
