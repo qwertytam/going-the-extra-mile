@@ -1,6 +1,7 @@
 import inspect
 from .utility import _INDENT
 
+
 class _Writer(object):
     '''Writer used to create source files with consistent formatting'''
 
@@ -38,7 +39,7 @@ class _Writer(object):
 
     def dedent(self):
         '''Dedent the writer by one level
-        
+
         To be used in a similiar fashion to the write() function in this class.
         See documentation on the write() function for further explanation.
         '''
@@ -65,7 +66,7 @@ class _Writer(object):
         Args:
             content (str): Content to write, as a string
                 Content is cleaned using Python's `inspect.cleandoc()`
-            end_in_newline (bool): Whether or not to write a newline at the end.
+            end_in_newline (bool): Whether or not to write a newline at the end
                 Default is True.
         '''
         lines = inspect.cleandoc(content).splitlines()
