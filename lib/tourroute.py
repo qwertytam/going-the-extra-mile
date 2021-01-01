@@ -16,7 +16,9 @@ class TourRoute():
 
     Class public methods:
         * read_csv: Read in a TourRoute from a csv file
-        * write_to_js: Writes TourRoute to a js file
+        * write_csv: Writes TourRoute to a csv file
+        * write_js: Writes TourRoute to a js file for use with Google Maps API
+            use
         * slices: Slice a TourRoute into x slices of length y
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
@@ -145,7 +147,7 @@ class TourRoute():
 
         return slice_list
 
-    def write_to_js(self, w, tour_name='optRoute'):
+    def write_js(self, w, tour_name='optRoute'):
         '''
         Write the TourRoute to a javascript file
         Args:
