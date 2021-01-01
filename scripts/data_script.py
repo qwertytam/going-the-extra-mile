@@ -19,6 +19,9 @@ This specific project is set up to visit every county and equivalent in the
 continental US. Visit is defined as visiting the county seat, and if no
 county seat exists, then the county location as given by geonames.
 
+TO DO:
+    * Make use of TourRoute class
+
 """
 
 import os.path

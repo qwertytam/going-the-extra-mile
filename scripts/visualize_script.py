@@ -12,6 +12,9 @@ The tour is read in from a csv file, then displayed and saved to html files:
 This specific project is set up to visit every county and equivalent in the
 continental US. Visit is defined as visiting the county seat, and if no
 county seat exists, then the county location as given by geonames.
+
+To dos:
+    * Make use of TourRoute class
 """
 
 import os.path

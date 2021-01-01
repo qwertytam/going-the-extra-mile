@@ -1,3 +1,7 @@
+'''
+    To do: Merge into data_script
+'''
+
 import getopt
 import sys
 import tourroute
