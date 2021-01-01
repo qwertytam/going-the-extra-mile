@@ -1,8 +1,8 @@
 """Tour Data Gathering & Finding
 
 This script downloads, cleans and gathers county and seat data from Geonames,
-then finds the optimal route using the Concorde algorithim. The Geonames data is
-saved as a .csv file in the data folder. The script will overwrite currently
+then finds the optimal route using the Concorde algorithim. The Geonames data
+is saved as a .csv file in the data folder. The script will overwrite currently
 exisiting .csv files with the same name (see below) in the data folder. The
 tour is saved in the out folder, with same caveats on overwriting etc.
 
@@ -25,10 +25,13 @@ import os.path
 import importlib.util
 
 # Class for terminal output colours
+
+
 class bcolours:
     OKGREEN = '\033[92m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
 
 print(f'\n\n{"~"*80}\n')
 print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
@@ -42,7 +45,7 @@ data_spec.loader.exec_module(datag)
 
 # Optimal tour finder
 ftour_spec = importlib.util.spec_from_file_location("data",
-                                                   "../lib/findtour.py")
+                                                    "../lib/findtour.py")
 ftour = importlib.util.module_from_spec(ftour_spec)
 ftour_spec.loader.exec_module(ftour)
 
@@ -111,7 +114,7 @@ print('For the continental 48 plus DC, '
 
 # Run solver the save the optimised tour
 tour = ftour.find_tour(visit_data, -1, 67)
-write_data(tour, tour_path)
+datag.write_data(tour, tour_path)
 
 print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
       + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
