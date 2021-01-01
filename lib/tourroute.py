@@ -11,6 +11,28 @@ from utils import _get
 class TourRoute():
     '''
     Holds the tour route as a series of waypoints
+
+    Example use:
+
+    Class public methods:
+        * read_csv: Read in a TourRoute from a csv file
+        * write_to_js: Writes TourRoute to a js file
+        * slices: Slice a TourRoute into x slices of length y
+        * flyingcrow_dist: Get the total TourRoute straight line distance
+            between each point
+        * add_points: Add points on the TourRoute
+        * update_points: Update points on the TourRoute
+        * del_points: Delete points from the TourRoute
+        * get_points: Get points from the TourRoute
+        * update_visit_points: Updates the name_visit, lat_visit and lon_visit
+            properties for the TourRoute. A visit point is the county seat if
+            available, else the county
+
+    Class private methods:
+        * _check_equal_arg_length: Checks that the arguments provided are of
+            equal length e.g. equal number of latitudes, longitudes and county
+            names provided to avoid data confusion
+        * _get_csv_waypoints: Get TourRoute waypoints from a csv file
     '''
 
     def __init__(self, gid_county=None, name_county=None, lat_county=None,
@@ -163,13 +185,60 @@ class TourSlice():
         self.destination = destination
         self.waypoints = waypoints
 
+    def get_slice_drivedistdur(self, gmaps):
+        '''
+        Get distance and duration for the given tour_slice
 
-def get_tour_distdur(apikey, tour_slices):
+        Args:
+            gmaps (googlemaps Client): An initiated Google Maps Client
+            tour_slice (TourSlice): A tour slice that contains latitude and
+                longitude coordinate tuples for an origin, destination and an
+                (optional) list of waypoints
+
+        Returns:
+            dist (numeric): Distance of the tour_slice in metres
+            duration (numeric): Duration taken to drive the tour_slice in
+                seconds
+        '''
+        wpts = self.waypoints
+        if wpts is None:
+            dir_result = gmaps.directions(origin=self.origin,
+                                          destination=self.destination,
+                                          mode="driving",
+                                          units="metric")
+        else:
+            dir_result = gmaps.directions(origin=self.origin,
+                                          destination=self.destination,
+                                          waypoints=wpts,
+                                          mode="driving",
+                                          units="metric")
+
+        if len(dir_result) == 0:
+            print('No direction result found for')
+            print(f'origin {self.origin} and '
+                  + f'destination {self.destination}')
+            return 0, 0, []
+
+        if 'legs' in dir_result[0]:
+            for leg in dir_result[0]['legs']:
+                dist = leg['distance']['value']
+                dur = leg['duration']['value']
+
+        else:
+            print('No `legs` found in dir_result[0] for')
+            print(f'origin {self.origin} and '
+                  + f'destination {self.destination}')
+            return 0, 0, []
+
+        return dist, dur
+
+
+def get_drive_distdur(apikey, tour_slices):
     '''
-    Gets the total tour distance and duration for the given list of TourSlices.
-    Use slices as the Google Maps API can only handle a certain number of
-    waypoints to decode. Hence, if dealing with many points, then slice up the
-    tour into smaller pieces.
+    Gets the total tour distance and duration for the given list of
+    TourSlices. Use slices as the Google Maps API can only handle a certain
+    number of waypoints to decode. Hence, if dealing with many points, then
+    slice up the tour into smaller pieces.
 
     Args:
         apikey (str): Google API key to use for the Google Directions
@@ -190,57 +259,9 @@ def get_tour_distdur(apikey, tour_slices):
     gmaps = googlemaps.Client(key=apikey)
 
     for tour_slice in tour_slices:
-        dist, dur = get_slice_distdur(gmaps, tour_slice)
+        dist, dur = tour_slice.get_slice_drivedistdur(gmaps)
         tdist += dist
         tdur += dur
         slicei += 1
 
     return tdist, tdur
-
-
-def get_slice_distdur(gmaps, tour_slice):
-    '''
-    Get distance and duration for the given tour_slice
-
-    Args:
-        gmaps (googlemaps Client): An initiated Google Maps Client
-        tour_slice (TourSlice): A tour slice that contains latitude and
-            longitude coordinate tuples for an origin, destination and an
-            (optional) list of waypoints
-
-    Returns:
-        dist (numeric): Distance of the tour_slice in metres
-        duration (numeric): Duration taken to drive the tour_slice in
-            seconds
-    '''
-    wpts = tour_slice.waypoints
-    if wpts is None:
-        dir_result = gmaps.directions(origin=tour_slice.origin,
-                                      destination=tour_slice.destination,
-                                      mode="driving",
-                                      units="metric")
-    else:
-        dir_result = gmaps.directions(origin=tour_slice.origin,
-                                      destination=tour_slice.destination,
-                                      waypoints=wpts,
-                                      mode="driving",
-                                      units="metric")
-
-    if len(dir_result) == 0:
-        print('No direction result found for')
-        print(f'origin {tour_slice.origin} and '
-              + f'destination {tour_slice.destination}')
-        return 0, 0, []
-
-    if 'legs' in dir_result[0]:
-        for leg in dir_result[0]['legs']:
-            dist = leg['distance']['value']
-            dur = leg['duration']['value']
-
-    else:
-        print('No `legs` found in dir_result[0] for')
-        print(f'origin {tour_slice.origin} and '
-              + f'destination {tour_slice.destination}')
-        return 0, 0, []
-
-    return dist, dur
