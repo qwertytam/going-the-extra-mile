@@ -180,9 +180,9 @@ def plot_coloured_counties(data, my_map):
         colors=('#3a4cc0', '#a6c3fd', '#f6b69a', '#b30326'),
         vmin=0, vmax=len(data)).to_step(n=len(data))
     # colorscale = branca.colormap.linear.YlOrRd_09.scale(0, len(data))
-    tour_series = pd.Series(data=data.index, index=data.fips_code)
+    data_series = pd.Series(data=data.index, index=data.fips_code)
 
-    def style_function(feature):
+    def _style_function(feature):
         order = data_series.get(int(feature['id'][-5:]), None)
 
         if order is None:
@@ -204,7 +204,7 @@ def plot_coloured_counties(data, my_map):
     folium.TopoJson(
         json.loads(requests.get(county_geo).text),
         'objects.us_counties_20m',
-        style_function=style_function
+        style_function=_style_function
     ).add_to(my_map)
 
     return my_map
