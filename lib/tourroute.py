@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 import googlemaps
-import numpy as np
-import os
-from os import path as ospath
+# import numpy as np
+# import os
+# from os import path as ospath
 import pandas as pd
 from utils import _get
 
@@ -22,7 +22,7 @@ class TourRoute():
             name_county (str): County name
             lat_county (float): County latitude
             lon_county (float): County longitude
-            state (str): State for the county; typically two letter abbreviation
+            state (str): County state; typically two letter abbreviation
             cat_code (str): Category code based on Geonames use. Format is
                 CC.SS.AAA where CC is two letter country abbreviation, SS is
                 two letter state abbreviation and AAA is three digit with
@@ -36,8 +36,8 @@ class TourRoute():
             name_seat (str): County seat name
             lat_seat (float): Seat latitude
             lon_seat (float): Seat longitude
-            name_visit (str): Name of the visited point; seat name if available,
-                else county name
+            name_visit (str): Name of the visited point; seat name if
+                available, else county name
             lat_visit (float): Latitude of the visited point; seat lat if
                 available, else county lat
             lon_visit (float): Longitude of the visited point; seat lon if
@@ -75,8 +75,8 @@ class TourRoute():
         #     states ([strings]): County states for each tour stop point
         #     seats ([strings]): County seat names for each tour stop point
         # '''
-        # self._points = [_format_tour_points(lat, lng, name, state, seat) for lat, lng, name, state, seat in zip(lats, lngs, names, states, seats)]
-
+        # self._points = [_format_tour_points(lat, lng, name, state, seat) for
+        # lat, lng, name, state, seat in zip(lats, lngs, names, states, seats)]
 
     def _get_waypoints(self):
         '''
@@ -123,7 +123,7 @@ class TourRoute():
 
         return slice_list
 
-    def write_to_js(self, w, tour_name=optRoute):
+    def write_to_js(self, w, tour_name='optRoute'):
         '''
         Write the TourRoute to a javascript file
         Args:
@@ -190,10 +190,10 @@ def get_tour_distdur(apikey, tour_slices):
     gmaps = googlemaps.Client(key=apikey)
 
     for tour_slice in tour_slices:
-        dist, dur  = get_slice_distdur(gmaps, tour_slice)
+        dist, dur = get_slice_distdur(gmaps, tour_slice)
         tdist += dist
         tdur += dur
-        slicei++
+        slicei += 1
 
     return tdist, tdur
 
