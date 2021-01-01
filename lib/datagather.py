@@ -173,6 +173,9 @@ def _clean_countydata(data):
     Returns:
         data.frame : Data frame of the corrected data
 
+    ** TO DO: Add functions for update, add, remove. Then move the data below
+        into csv files so that user edits the csv files, rather than source
+        code
     '''
 
     # Name correction in data source
@@ -259,6 +262,9 @@ def dl_fips_codes(url, path):
     fips = pd.read_csv(url, na_values=[' '], names=header_names,
                        usecols=keep_names, header=0, dtype=dyptes)
 
+    # Data correction and clean up
+    fips = _clean_fipsdata(fips)
+
     # Update the column names to all lower case
     fips.columns = ['fips_code', 'state', 'name']
     write_data(fips, path)
@@ -277,6 +283,9 @@ def _clean_fipsdata(data):
     Returns:
         data.frame : Data frame of the corrected data
 
+    ** TO DO: Add functions for update, add, remove. Then move the data below
+        into csv files so that user edits the csv files, rather than source
+        code
     '''
 
     # Replace strings to align with what is used in geonames data
@@ -341,6 +350,12 @@ def prep_data(data, fips, path):
 
     Raises:
         Exception: path does not point to a csv file
+
+    ** TO DO:
+        * Make use of the TourRoute class by:
+            1) Move merged data into a new TourRoute object
+            2) Use a TourRoute class method to create the visit data
+            3) Use a TourRoute class method to write data to a csv file
     '''
 
     # Split the data and then remerge it, effectively pivoting it into wide
