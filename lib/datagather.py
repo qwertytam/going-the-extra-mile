@@ -28,6 +28,10 @@ from re import search, sub
 from requests import get
 from zipfile import ZipFile
 
+# Module global variables
+_COUNTY_FCODE = 'ADM2'
+_SEAT_FCODE = 'PPLA2'
+
 # Class for terminal output colours
 
 
@@ -61,8 +65,8 @@ def dl_county_data(url, path):
     # Function local variables
     url_ext = '.zip'
     txt_ext = '.txt'
-    seat_fcode = 'PPLA2'
-    keep_fcodes = ['PPLA2', 'ADM2']  # PPLA2 for county, ADM2 for county seat
+    # PPLA2 for county, ADM2 for county seat
+    keep_fcodes = [_SEAT_FCODE, _COUNTY_FCODE]
 
     # csv header names and keep columns
     header_names = ['gid', 'name', 'asciiname', 'altnames', 'lat', 'lon',
@@ -182,7 +186,7 @@ def _clean_countydata(data):
                              'lat': 36.802778,
                              'lon': -118.2,
                              'f_class': 'P',
-                             'f_code': 'PPLA2',
+                             'f_code': _SEAT_FCODE,
                              'country': 'US',
                              'state': 'CA',
                              'county': 27,
@@ -198,9 +202,10 @@ def _clean_countydata(data):
     # # Oakley, KS is actually the county seat for Logan County,
     # # i.e. for county 109 in KS
     data.at[(data.state == 'KS') & (data.name == 'Oakley')
-            & (data.f_code == seat_fcode), 'county'] = 109
+            & (data.f_code == _SEAT_FCODE), 'county'] = 109
 
     return data
+
 
 def dl_fips_codes(url, path):
     '''
@@ -254,13 +259,12 @@ def dl_fips_codes(url, path):
     fips = pd.read_csv(url, na_values=[' '], names=header_names,
                        usecols=keep_names, header=0, dtype=dyptes)
 
-
-
     # Update the column names to all lower case
     fips.columns = ['fips_code', 'state', 'name']
     write_data(fips, path)
 
     return fips
+
 
 def _clean_fipsdata(data):
     '''
@@ -315,6 +319,7 @@ def _clean_fipsdata(data):
 
     return data
 
+
 def prep_data(data, fips, path):
     '''
     Prepares data for finding tour with the following operations:
@@ -338,14 +343,10 @@ def prep_data(data, fips, path):
         Exception: path does not point to a csv file
     '''
 
-    # Function local variables
-    county_fcode = 'ADM2'
-    seat_fcode = 'PPLA2'
-
     # Split the data and then remerge it, effectively pivoting it into wide
     # format
-    counties = data.loc[data['f_code'] == county_fcode]
-    seats = data.loc[data['f_code'] == seat_fcode]
+    counties = data.loc[data['f_code'] == _COUNTY_FCODE]
+    seats = data.loc[data['f_code'] == _SEAT_FCODE]
 
     data = counties.merge(seats, how='left', copy=False,
                           suffixes=('_county', '_seat'), on='cat_code',
