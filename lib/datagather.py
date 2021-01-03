@@ -56,10 +56,6 @@ def dl_county_data(url, path):
 
     Returns:
         data.frame : Data frame of downloaded data
-
-    Raises:
-        Exception: url does not point to a zip file
-        Exception: path does not point to a csv file
     '''
 
     # Function local variables
@@ -82,23 +78,6 @@ def dl_county_data(url, path):
               'lon': np.float64, 'f_class': str, 'f_code': str, 'country': str,
               'state': str, 'county': str}
     # dyptes = {'country': str, 'state': str, 'county': 'Int64'}
-
-    # Check url and path are correct form
-    try:
-        error_msg = f'.zip not found before or at end of url: {url}'
-        assert (search(r'\.zip', url).span()[1] == len(url)), error_msg
-    except AttributeError:
-        print(f'.zip not found in url: {url}')
-        raise
-    else:
-        print('url is correctly formed')
-
-    try:
-        error_msg = f'.csv not found before or at end of path: {path}'
-        assert (search(r'\.csv', path).span()[1] == len(path)), error_msg
-    except AttributeError:
-        print(f'.csv not found in path: {path}')
-        raise
 
     # Get the zip file name to be downloaded
     zip_fnm = search(r'(([0-9a-zA-Z])+\.zip)$', url)
@@ -225,10 +204,6 @@ def dl_fips_codes(url, path):
 
     Returns:
         data.frame : Data frame of downloaded data
-
-    Raises:
-        Exception: url does not point to a csv file
-        Exception: path does not point to a csv file
     '''
 
     # csv header names and keep columns
