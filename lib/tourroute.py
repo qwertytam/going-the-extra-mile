@@ -1,11 +1,18 @@
-from __future__ import absolute_import
 
+from __future__ import absolute_import
 import googlemaps
-# import numpy as np
+
+import numpy as np
 # import os
 # from os import path as ospath
 import pandas as pd
 from utils import _get
+
+_POINTS_COL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
+                      'lon_county',
+                      'state', 'cat_code', 'fips_code',
+                      'gid_seat', 'name_seat', 'lat_seat', 'lon_seat',
+                      'name_visit', 'lat_visit', 'lon_visit']
 
 
 class TourRoute():
@@ -15,6 +22,8 @@ class TourRoute():
     Example use:
 
     Class public methods:
+        * add_points: Add points on the TourRoute
+
         * read_csv: Read in a TourRoute from a csv file
         * write_csv: Writes TourRoute to a csv file
         * write_js: Writes TourRoute to a js file for use with Google Maps API
@@ -22,7 +31,7 @@ class TourRoute():
         * slices: Slice a TourRoute into x slices of length y
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
-        * add_points: Add points on the TourRoute
+
         * update_points: Update points on the TourRoute
         * del_points: Delete points from the TourRoute
         * get_points: Get points from the TourRoute
@@ -31,15 +40,14 @@ class TourRoute():
             available, else the county
 
     Class private methods:
-        * _check_new_points: Checks that the arguments provided are of
-            equal length e.g. equal number of latitudes, longitudes and county
-            names provided to avoid data confusion
         * _get_csv_waypoints: Get TourRoute waypoints from a csv file
     '''
 
-    def __init__(self, gid_county=None, name_county=None, lat_county=None,
-                 lon_county=None, state=None, cat_code=None, fips_code=None,
-                 **kwargs):
+    def __init__(self,
+                 gid_county, name_county, lat_county, lon_county,
+                 state, cat_code, fips_code,
+                 gid_seat=None, name_seat=None, lat_seat=None, lon_seat=None,
+                 name_visit=None, lat_visit=None, lon_visit=None):
         '''
         Args:
             gid_county (int): Geonames unique ID for the county
@@ -68,6 +76,72 @@ class TourRoute():
                 available, else county lon
 
         '''
+        self._points = pd.DataFrame(columns=_POINTS_COL_NAMES_)
+        self.add_points(gid_county, name_county, lat_county,
+                        lon_county, state, cat_code, fips_code,
+                        gid_seat, name_seat, lat_seat, lon_seat,
+                        name_visit, lat_visit, lon_visit)
+
+    def add_points(self,
+                   gid_county, name_county, lat_county, lon_county,
+                   state, cat_code, fips_code,
+                   gid_seat=None, name_seat=None, lat_seat=None, lon_seat=None,
+                   name_visit=None, lat_visit=None, lon_visit=None):
+        '''
+        Add points to a TourRoute
+
+        Args:
+            gid_county (int): Geonames unique ID for the county
+            name_county (str): County name
+            lat_county (float): County latitude
+            lon_county (float): County longitude
+            state (str): County state; typically two letter abbreviation
+            cat_code (str): Category code based on Geonames use. Format is
+                CC.SS.AAA where CC is two letter country abbreviation, SS is
+                two letter state abbreviation and AAA is three digit with
+                leading zeros for the county number within the state e.g.
+                US.NY.047 for Kings County in the state of New York, USA
+            fips_code (int): Federal Information Processing Standards code for
+                each county
+
+        Optional:
+            gid_seat (int): Geonames unique ID for the county seat
+            name_seat (str): County seat name
+            lat_seat (float): Seat latitude
+            lon_seat (float): Seat longitude
+            name_visit (str): Name of the visited point; seat name if
+                available, else county name
+            lat_visit (float): Latitude of the visited point; seat lat if
+                available, else county lat
+            lon_visit (float): Longitude of the visited point; seat lon if
+                available, else county lon
+
+        Raises:
+            Exception: AssertionError if any of the not None arguments are of
+                different length to ``gid_county``
+        '''
+
+        new_points = pd.DataFrame()
+        args = [gid_county, name_county, lat_county, lon_county,
+                state, cat_code, fips_code,
+                gid_seat, name_seat, lat_seat, lon_seat,
+                name_visit, lat_visit, lon_visit]
+
+        for i, arg in enumerate(args):
+            if arg is None:
+                new_points[_POINTS_COL_NAMES_[i]] = np.nan * len(new_points)
+            else:
+                # Check that the new data columns are of equal length
+                if i == 0:
+                    length_check = len(arg)
+
+                error_msg = f'Argument ``{_POINTS_COL_NAMES_[i]}`` of ' \
+                    + f'different length to ``{_POINTS_COL_NAMES_[0]}``'
+
+                assert (len(arg) == length_check), error_msg
+                new_points[_POINTS_COL_NAMES_[i]] = arg
+
+        self._points = self._points.append(new_points)
 
     def read_csv(self, path):
         '''
@@ -90,18 +164,6 @@ class TourRoute():
         self.length = None
         self.waypoints = None
         self._get_waypoints()
-
-        # '''
-        # Args:
-        #     lats ([float]): Latitudes for tour stop points
-        #     lngs ([float]): Longitudes for tour stop points
-        #     names ([strings]): County names for each tour stop point
-        #     states ([strings]): County states for each tour stop point
-        #     seats ([strings]): County seat names for each tour stop point
-        # '''
-        # self._points = [_format_tour_points(lat, lng, name, state, seat) for
-        # lat, lng, name, state, seat in zip(lats, lngs, names, states, seats)]
-
 
     def slices(self, **kwargs):
         '''
@@ -156,51 +218,6 @@ class TourRoute():
         w.write('];')
         w.write()
 
-
-    def _check_new_points(self, gid_county=None, name_county=None, lat_county=None,
-                 lon_county=None, state=None, cat_code=None, fips_code=None,
-                 **kwargs):
-        '''
-        Checks new points to be added to a TourRoute are:
-            * All arguments provided are of equal length
-
-        Args:
-            self:
-            gid_county (int): Geonames unique ID for the county
-            name_county (str): County name
-            lat_county (float): County latitude
-            lon_county (float): County longitude
-            state (str): County state; typically two letter abbreviation
-            cat_code (str): Category code based on Geonames use. Format is
-                CC.SS.AAA where CC is two letter country abbreviation, SS is
-                two letter state abbreviation and AAA is three digit with
-                leading zeros for the county number within the state e.g.
-                US.NY.047 for Kings County in the state of New York, USA
-            fips_code (int): Federal Information Processing Standards code for
-                each county
-
-        Optional:
-            gid_seat (int): Geonames unique ID for the county seat
-            name_seat (str): County seat name
-            lat_seat (float): Seat latitude
-            lon_seat (float): Seat longitude
-            name_visit (str): Name of the visited point; seat name if
-                available, else county name
-            lat_visit (float): Latitude of the visited point; seat lat if
-                available, else county lat
-            lon_visit (float): Longitude of the visited point; seat lon if
-                available, else county lon'''
-
-        arg_check = pd.DataFrame(columns = ['arg', 'len', 'check'])
-        arg_list = ['gid_county', 'name_county', 'lat_county,
-                    'lon_county', 'cat_code', 'fips_code']
-        (opt_keys, opt_args) = _get(kwargs, ['gid_seat', 'name_seat',
-        'lat_seat', 'lon_seat', 'name_visit', 'lat_visit', 'lon_visit'],
-                        get_key=True))
-
-        for key
-
-
     def _get_waypoints(self):
         '''
         Get the waypoints from the given data path and file name. Expect
@@ -209,8 +226,6 @@ class TourRoute():
         keep_cols = ['lat_visit', 'lon_visit']
         self.waypoints = pd.read_csv(self.path, header=0, usecols=keep_cols)
         self.length = len(self.waypoints)
-
-
 
 
 class TourSlice():
