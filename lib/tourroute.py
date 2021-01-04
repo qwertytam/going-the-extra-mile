@@ -75,16 +75,16 @@ class TourRoute():
                 each county
 
         Optional:
-            gid_seat (int): Geonames unique ID for the county seat
-            name_seat (str): County seat name
-            lat_seat (float): Seat latitude
-            lon_seat (float): Seat longitude
-            name_visit (str): Name of the visited point; seat name if
-                available, else county name
-            lat_visit (float): Latitude of the visited point; seat lat if
-                available, else county lat
-            lon_visit (float): Longitude of the visited point; seat lon if
-                available, else county lon
+            gid_seat (int): Geonames unique ID for the county seat. Defaults to
+                ``None``.
+            name_seat (str): County seat name. Defaults to ``None``.
+            lat_seat (float): Seat latitude. Defaults to ``None``.
+            lon_seat (float): Seat longitude. Defaults to ``None``.
+            name_visit (str): Name of the visited point. Defaults to ``None``.
+            lat_visit (float): Latitude of the visited point. Defaults to
+                ``None``.
+            lon_visit (float): Longitude of the visited point. Defaults to
+                ``None``.
 
         Raises:
             Exception: AssertionError if any of the not None arguments are of
@@ -125,7 +125,8 @@ class TourRoute():
         Args:
             path (handle): File path and name pointing to input data file
             col_map (dict): Mapping of ``add_points()`` argument names (the
-                keys) to csv column names (the values).
+                keys) to csv column names (the values). Defaults to minimum
+                required columns for ``add_points()``.
 
         Notes:
             The input data file is expected to have `lat_visit` and `lon_visit`
@@ -180,6 +181,31 @@ class TourRoute():
             os.mkdir(dir)
 
         self._points.to_csv(path, index=False)
+
+    def get_points(self, locs, key='gid_county'):
+        '''
+        Gets point(s) from the TourRoute
+
+        Parameters:
+            locs ([list of ints]): List locations as either Geoname county ids
+                or gpd.DataFrame integer row numbers
+            key (str): Either ``'gid_county'`` or ``'ilocs'`` to determine
+                reference type to get the desired rows. Defaults to
+                ``'gid_county'``.
+
+        Returns:
+            pd.DataFrame of the desired points
+        '''
+
+        if key == 'gid_county':
+            # Check that locs is a list for passing to df.isin()
+            locs = locs if isinstance(locs, (list)) else [locs]
+            df = self._points.loc[
+                self._points.isin({'gid_county': locs}).gid_county]
+        else:
+            df = self._points.iloc[locs]
+
+        return df
 
     def slices(self, **kwargs):
         '''
