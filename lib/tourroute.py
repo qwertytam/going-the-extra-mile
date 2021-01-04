@@ -29,6 +29,7 @@ class TourRoute():
         * read_csv: Read in a TourRoute from a csv file
         * write_csv: Writes TourRoute to a csv file
         * get_points: Get points from the TourRoute
+        * del_points: Delete points from the TourRoute
 
         to dos / check:
         * write_js: Writes TourRoute to a js file for use with Google Maps API
@@ -37,7 +38,6 @@ class TourRoute():
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
         * update_points: Update points on the TourRoute
-        * del_points: Delete points from the TourRoute
         * update_visit_points: Updates the name_visit, lat_visit and lon_visit
             properties for the TourRoute. A visit point is the county seat if
             available, else the county
@@ -206,6 +206,30 @@ class TourRoute():
             df = self._points.iloc[locs]
 
         return df
+
+    def del_points(self, locs, key='gid_county'):
+        '''
+        Delete point(s) from the TourRoute
+
+        Parameters:
+            locs ([list of ints]): List locations as either Geoname county ids
+                or gpd.DataFrame integer row numbers
+            key (str): Either ``'gid_county'`` or ``'ilocs'`` to determine
+                reference type to delete the desired rows. Defaults to
+                ``'gid_county'``.
+
+        '''
+
+        if key == 'gid_county':
+            # Check that locs is a list for passing to df.isin()
+            locs = locs if isinstance(locs, (list)) else [locs]
+            self._points.drop(
+                self._points.loc[
+                    self._points.isin({'gid_county': locs}).gid_county].index,
+                axis=0, inplace=True)
+        else:
+            self._points.drop(index=self._points.iloc[locs].index,
+                              inplace=True)
 
     def slices(self, **kwargs):
         '''
