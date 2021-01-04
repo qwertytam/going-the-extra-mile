@@ -1,5 +1,8 @@
 import inspect
-from .utility import _INDENT
+
+# Indent level for writer
+_INDENT_LEVEL = 2
+_INDENT = ' ' * _INDENT_LEVEL
 
 
 class _Writer(object):
