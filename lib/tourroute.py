@@ -32,15 +32,16 @@ class TourRoute():
         * del_points: Delete points from the TourRoute
 
         to dos / check:
+        * update_points: Update points on the TourRoute
+        * update_visit_points: Updates the name_visit, lat_visit and lon_visit
+            properties for the TourRoute. A visit point is the county seat if
+            available, else the county
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
         * slices: Slice a TourRoute into x slices of length y
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
-        * update_points: Update points on the TourRoute
-        * update_visit_points: Updates the name_visit, lat_visit and lon_visit
-            properties for the TourRoute. A visit point is the county seat if
-            available, else the county
+
 
     Class private methods:
 
