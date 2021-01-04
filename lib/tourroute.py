@@ -248,6 +248,13 @@ class TourRoute():
 
         '''
 
+        # Check that up_dict contains 'git_county' key
+
+        # Get list of keys that is not 'git_county':: [upd_cols]
+
+        # Update self._points
+        # self._points.loc[self._points.isin({'gid_county': up_dict['gid_county'].values}).gid_county, [updcols]] = up_dict[[upd_cols]]
+
     def slices(self, **kwargs):
         '''
         Returns a list of slices of length `lgth` (default=10). Each slice has
