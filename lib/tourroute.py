@@ -1,10 +1,9 @@
 
 from __future__ import absolute_import
-import googlemaps
 
+import googlemaps
 import numpy as np
-# import os
-# from os import path as ospath
+import os
 import pandas as pd
 from utils import _get
 
@@ -28,20 +27,21 @@ class TourRoute():
     Class public methods:
         * add_points: Add points on the TourRoute
         * read_csv: Read in a TourRoute from a csv file
-
         * write_csv: Writes TourRoute to a csv file
+        * get_points: Get points from the TourRoute
+        * del_points: Delete points from the TourRoute
+
+        to dos / check:
+        * update_points: Update points on the TourRoute
+        * update_visit_points: Updates the name_visit, lat_visit and lon_visit
+            properties for the TourRoute. A visit point is the county seat if
+            available, else the county
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
         * slices: Slice a TourRoute into x slices of length y
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
 
-        * update_points: Update points on the TourRoute
-        * del_points: Delete points from the TourRoute
-        * get_points: Get points from the TourRoute
-        * update_visit_points: Updates the name_visit, lat_visit and lon_visit
-            properties for the TourRoute. A visit point is the county seat if
-            available, else the county
 
     Class private methods:
 
@@ -76,16 +76,16 @@ class TourRoute():
                 each county
 
         Optional:
-            gid_seat (int): Geonames unique ID for the county seat
-            name_seat (str): County seat name
-            lat_seat (float): Seat latitude
-            lon_seat (float): Seat longitude
-            name_visit (str): Name of the visited point; seat name if
-                available, else county name
-            lat_visit (float): Latitude of the visited point; seat lat if
-                available, else county lat
-            lon_visit (float): Longitude of the visited point; seat lon if
-                available, else county lon
+            gid_seat (int): Geonames unique ID for the county seat. Defaults to
+                ``None``.
+            name_seat (str): County seat name. Defaults to ``None``.
+            lat_seat (float): Seat latitude. Defaults to ``None``.
+            lon_seat (float): Seat longitude. Defaults to ``None``.
+            name_visit (str): Name of the visited point. Defaults to ``None``.
+            lat_visit (float): Latitude of the visited point. Defaults to
+                ``None``.
+            lon_visit (float): Longitude of the visited point. Defaults to
+                ``None``.
 
         Raises:
             Exception: AssertionError if any of the not None arguments are of
@@ -126,7 +126,8 @@ class TourRoute():
         Args:
             path (handle): File path and name pointing to input data file
             col_map (dict): Mapping of ``add_points()`` argument names (the
-                keys) to csv column names (the values).
+                keys) to csv column names (the values). Defaults to minimum
+                required columns for ``add_points()``.
 
         Notes:
             The input data file is expected to have `lat_visit` and `lon_visit`
@@ -144,7 +145,7 @@ class TourRoute():
         for col in _POINTS_COL_NAMES_:
             try:
                 dfl.append(df[col_map[col]])
-            except:
+            except KeyError:
                 dfl.append(pd.DataFrame(columns=[col]))  # Append as empty df
 
         # Use class method to add points
@@ -164,6 +165,72 @@ class TourRoute():
                         name_visit=None if dfl[11].empty else dfl[11],
                         lat_visit=None if dfl[12].empty else dfl[12],
                         lon_visit=None if dfl[13].empty else dfl[13])
+
+    def write_csv(self, path):
+        '''
+        Writes the TourRoute to the given path pointing to a csv file.
+
+        Parameters:
+            path (handle): A full path to a csv file e.g. ../data/data.csv.
+                Will create dir and file if they do not exist
+
+        '''
+
+        # Create dir if it does not exist
+        dir = os.path.dirname(path)
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+
+        self._points.to_csv(path, index=False)
+
+    def get_points(self, locs, key='gid_county'):
+        '''
+        Gets point(s) from the TourRoute
+
+        Parameters:
+            locs ([list of ints]): List locations as either Geoname county ids
+                or gpd.DataFrame integer row numbers
+            key (str): Either ``'gid_county'`` or ``'ilocs'`` to determine
+                reference type to get the desired rows. Defaults to
+                ``'gid_county'``.
+
+        Returns:
+            pd.DataFrame of the desired points
+        '''
+
+        if key == 'gid_county':
+            # Check that locs is a list for passing to df.isin()
+            locs = locs if isinstance(locs, (list)) else [locs]
+            df = self._points.loc[
+                self._points.isin({'gid_county': locs}).gid_county]
+        else:
+            df = self._points.iloc[locs]
+
+        return df
+
+    def del_points(self, locs, key='gid_county'):
+        '''
+        Delete point(s) from the TourRoute
+
+        Parameters:
+            locs ([list of ints]): List locations as either Geoname county ids
+                or gpd.DataFrame integer row numbers
+            key (str): Either ``'gid_county'`` or ``'ilocs'`` to determine
+                reference type to delete the desired rows. Defaults to
+                ``'gid_county'``.
+
+        '''
+
+        if key == 'gid_county':
+            # Check that locs is a list for passing to df.isin()
+            locs = locs if isinstance(locs, (list)) else [locs]
+            self._points.drop(
+                self._points.loc[
+                    self._points.isin({'gid_county': locs}).gid_county].index,
+                axis=0, inplace=True)
+        else:
+            self._points.drop(index=self._points.iloc[locs].index,
+                              inplace=True)
 
     def slices(self, **kwargs):
         '''
