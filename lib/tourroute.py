@@ -7,11 +7,11 @@ import os
 import pandas as pd
 from utils import _get
 
-_POINTS_COL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
-                      'lon_county',
-                      'state', 'cat_code', 'fips_code',
-                      'gid_seat', 'name_seat', 'lat_seat', 'lon_seat',
-                      'name_visit', 'lat_visit', 'lon_visit']
+_PCOL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
+                'lon_county',
+                'state', 'cat_code', 'fips_code',
+                'gid_seat', 'name_seat', 'lat_seat', 'lon_seat',
+                'name_visit', 'lat_visit', 'lon_visit']
 
 
 class TourRoute():
@@ -51,7 +51,7 @@ class TourRoute():
         '''
 
         '''
-        self._points = pd.DataFrame(columns=_POINTS_COL_NAMES_)
+        self._points = pd.DataFrame(columns=_PCOL_NAMES_)
 
     def add_points(self,
                    gid_county, name_county, lat_county, lon_county,
@@ -100,17 +100,17 @@ class TourRoute():
 
         for i, arg in enumerate(args):
             if arg is None:
-                new_points[_POINTS_COL_NAMES_[i]] = np.nan * len(new_points)
+                new_points[_PCOL_NAMES_[i]] = np.nan * len(new_points)
             else:
                 # Check that the new data columns are of equal length
                 if i == 0:
                     length_check = len(arg)
 
-                error_msg = f'Argument ``{_POINTS_COL_NAMES_[i]}`` of ' \
-                    + f'different length to ``{_POINTS_COL_NAMES_[0]}``'
+                error_msg = f'Argument ``{_PCOL_NAMES_[i]}`` of ' \
+                    + f'different length to ``{_PCOL_NAMES_[0]}``'
 
                 assert (len(arg) == length_check), error_msg
-                new_points[_POINTS_COL_NAMES_[i]] = arg
+                new_points[_PCOL_NAMES_[i]] = arg
 
         self._points = self._points.append(new_points)
 
@@ -142,7 +142,7 @@ class TourRoute():
         # Loop through list of possible column names
         # If name not found in the csv data `df`, then catch the error, and
         # append it as an empty data frame
-        for col in _POINTS_COL_NAMES_:
+        for col in _PCOL_NAMES_:
             try:
                 dfl.append(df[col_map[col]])
             except KeyError:
@@ -198,11 +198,11 @@ class TourRoute():
             pd.DataFrame of the desired points
         '''
 
-        if key == 'gid_county':
+        if key == _PCOL_NAMES_[0]:
             # Check that locs is a list for passing to df.isin()
             locs = locs if isinstance(locs, (list)) else [locs]
             df = self._points.loc[
-                self._points.isin({'gid_county': locs}).gid_county]
+                self._points.isin({_PCOL_NAMES_[0]: locs}).gid_county]
         else:
             df = self._points.iloc[locs]
 
@@ -221,12 +221,13 @@ class TourRoute():
 
         '''
 
-        if key == 'gid_county':
+        if key == _PCOL_NAMES_[0]:
             # Check that locs is a list for passing to df.isin()
             locs = locs if isinstance(locs, (list)) else [locs]
             self._points.drop(
                 self._points.loc[
-                    self._points.isin({'gid_county': locs}).gid_county].index,
+                    self._points.isin(
+                        {_PCOL_NAMES_[0]: locs}).gid_county].index,
                 axis=0, inplace=True)
         else:
             self._points.drop(index=self._points.iloc[locs].index,
@@ -244,16 +245,17 @@ class TourRoute():
                 point(s) aka data frame row(s).
 
         Usage:
-            updates = {'gid_county': [10, 20], 'name_county': ['foo', 'bar']}
+            updates = {'gid_county': [100, 200], 'name_county': ['foo', 'bar']}
+            tr.update_points(updates)
 
         '''
-
-        # Check that up_dict contains 'git_county' key
-
-        # Get list of keys that is not 'git_county':: [upd_cols]
-
-        # Update self._points
-        # self._points.loc[self._points.isin({'gid_county': up_dict['gid_county'].values}).gid_county, [updcols]] = up_dict[[upd_cols]]
+        upd_cols = list(up_dict.keys())
+        upd_cols.remove(_PCOL_NAMES_[0])
+        for upd_col in upd_cols:
+            self._points.loc[
+                self._points.isin(
+                    {_PCOL_NAMES_[0]: _get(up_dict, _PCOL_NAMES_[0])}
+                ).gid_county, upd_col] = _get(up_dict, upd_col)
 
     def slices(self, **kwargs):
         '''
