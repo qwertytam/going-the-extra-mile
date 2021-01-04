@@ -164,22 +164,22 @@ class TourRoute():
                         lat_visit=None if dfl[12].empty else dfl[12],
                         lon_visit=None if dfl[13].empty else dfl[13])
 
-def write_csv(self, path):
-    '''
-    Writes the TourRoute to the given path pointing to a csv file.
+    def write_csv(self, path):
+        '''
+        Writes the TourRoute to the given path pointing to a csv file.
 
-    Parameters:
-        path (handle): A full path to a csv file e.g. ../data/data.csv. Will
-            create dir and file if they do not exist
+        Parameters:
+            path (handle): A full path to a csv file e.g. ../data/data.csv. Will
+                create dir and file if they do not exist
 
-    '''
+        '''
 
-    # Create dir if it does not exist
-    dir = os.path.dirname(path)
-    if not os.path.exists(dir):
-        mkdir(dir)
+        # Create dir if it does not exist
+        dir = os.path.dirname(path)
+        if not os.path.exists(dir):
+            mkdir(dir)
 
-    self._points.to_csv(path, index=False)
+        self._points.to_csv(path, index=False)
 
 
     def slices(self, **kwargs):
