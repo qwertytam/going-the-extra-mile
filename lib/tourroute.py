@@ -19,7 +19,11 @@ class TourRoute():
     '''
     Holds the tour route as a series of waypoints
 
-    Example use:
+    Usage::
+        import tourroute
+        tr = tourroute.TourRoute()
+        tr.read_csv('../data/data_in.csv')
+        slices = tr.slices(10)
 
     Class public methods:
         * add_points: Add points on the TourRoute
@@ -40,7 +44,7 @@ class TourRoute():
             available, else the county
 
     Class private methods:
-        * _get_csv_waypoints: Get TourRoute waypoints from a csv file
+
     '''
 
     def __init__(self):
@@ -110,27 +114,56 @@ class TourRoute():
 
         self._points = self._points.append(new_points)
 
-    def read_csv(self, path):
+    def read_csv(self, path,
+                 col_map={'gid_county': 'gid_county',
+                          'name_county': 'name_county',
+                          'lat_county': 'lat_county',
+                          'lon_county': 'lon_county',
+                          'state': 'state',
+                          'cat_code': 'cat_code',
+                          'fips_code': 'fips_code'}):
         '''
         Args:
             path (handle): File path and name pointing to input data file
-
-        Usage::
-
-            import tourroute
-            tr = tourroute.TourRoute()
-            tr.read_csv('../data/data_in.csv')
-            slices = tr.slices(10)
+            col_map (dict): Mapping of ``add_points()`` argument names (the
+                keys) to csv column names (the values).
 
         Notes:
             The input data file is expected to have `lat_visit` and `lon_visit`
             in the header, as the columns containing the latitude and longitude
             of each waypoint to visit, where each waypoint is a row
         '''
-        self.path = path
-        self.length = None
-        self.waypoints = None
-        self._get_waypoints()
+
+        keep_cols = list(col_map.values())
+        df = pd.read_csv(path, header=0, usecols=keep_cols)
+        dfl = []
+
+        # Loop through list of possible column names
+        # If name not found in the csv data `df`, then catch the error, and
+        # append it as an empty data frame
+        for col in _POINTS_COL_NAMES_:
+            try:
+                dfl.append(df[col_map[col]])
+            except:
+                dfl.append(pd.DataFrame(columns=[col]))  # Append as empty df
+
+        # Use class method to add points
+        # For optional arguments, check if it exists, if not then pass `None`
+        # back to class method
+        self.add_points(gid_county=dfl[0],
+                        name_county=dfl[1],
+                        lat_county=dfl[2],
+                        lon_county=dfl[3],
+                        state=dfl[4],
+                        cat_code=dfl[5],
+                        fips_code=dfl[6],
+                        gid_seat=None if dfl[7].empty else dfl[7],
+                        name_seat=None if dfl[8].empty else dfl[8],
+                        lat_seat=None if dfl[9].empty else dfl[9],
+                        lon_seat=None if dfl[10].empty else dfl[10],
+                        name_visit=None if dfl[11].empty else dfl[11],
+                        lat_visit=None if dfl[12].empty else dfl[12],
+                        lon_visit=None if dfl[13].empty else dfl[13])
 
     def slices(self, **kwargs):
         '''
@@ -184,15 +217,6 @@ class TourRoute():
         w.dedent()
         w.write('];')
         w.write()
-
-    def _get_waypoints(self):
-        '''
-        Get the waypoints from the given data path and file name. Expect
-        to find `lat_visit` and `lon_visit` columns in the data file.e
-        '''
-        keep_cols = ['lat_visit', 'lon_visit']
-        self.waypoints = pd.read_csv(self.path, header=0, usecols=keep_cols)
-        self.length = len(self.waypoints)
 
 
 class TourSlice():
