@@ -6,7 +6,8 @@ import math
 import numpy as np
 import os
 import pandas as pd
-from utils import _get
+import utils
+from writer import _Writer
 
 _PCOL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
                 'lon_county',
@@ -36,9 +37,9 @@ class TourRoute():
             properties for the TourRoute. A visit point is the county seat if
             available, else the county
         * slices: Slice a TourRoute into x slices of length y
-
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
+
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
 
@@ -124,7 +125,7 @@ class TourRoute():
                           'fips_code': 'fips_code'}):
         '''
         Args:
-            path (handle): File path and name pointing to input data file
+            path (str): File path and name pointing to input data file
             col_map (dict): Mapping of ``add_points()`` argument names (the
                 keys) to csv column names (the values). Defaults to minimum
                 required columns for ``add_points()``.
@@ -171,7 +172,7 @@ class TourRoute():
         Writes the TourRoute to the given path pointing to a csv file.
 
         Parameters:
-            path (handle): A full path to a csv file e.g. ../data/data.csv.
+            path (str): A full path to a csv file e.g. ../data/data.csv.
                 Will create dir and file if they do not exist
 
         '''
@@ -254,8 +255,8 @@ class TourRoute():
         for upd_col in upd_cols:
             self._points.loc[
                 self._points.isin(
-                    {_PCOL_NAMES_[0]: _get(up_dict, _PCOL_NAMES_[0])}
-                ).gid_county, upd_col] = _get(up_dict, upd_col)
+                    {_PCOL_NAMES_[0]: utils._get(up_dict, _PCOL_NAMES_[0])}
+                ).gid_county, upd_col] = utils._get(up_dict, upd_col)
 
     def update_visit_points(self):
         '''
@@ -312,22 +313,46 @@ class TourRoute():
 
         return slice_list
 
-    def write_js(self, w, tour_name='optRoute'):
+    def write_js(self, path, tour_name='optRoute'):
         '''
         Write the TourRoute to a javascript file
         Args:
-            w (_Writer): Writer used to write the TourRoute
+            path (str): Path and file name for output js file
 
         Optional:
             tour_name (string): Variable name to be used in the output file.
                 Defaults to `optRoute`.
         '''
-        w.write(f'var {tour_name} = [')
-        w.indent()
-        [w.write(f'{point}') for point in self._points]
-        w.dedent()
-        w.write('];')
-        w.write()
+        with open(path, 'w') as f:
+            self._write_js(f, tour_name)
+
+    def _write_js(self, file, tour_name='optRoute'):
+        '''
+        Write the TourRoute to a javascript file
+        Args:
+            file (handle): File handler for output js file
+
+        Optional:
+            tour_name (string): Variable name to be used in the output file.
+                Defaults to `optRoute`.
+        '''
+        with _Writer(file) as w:
+            w.write(f'var {tour_name} = [')
+            w.indent()
+
+            for idx, point in self._points.iterrows():
+                w.write('{ ', end_in_newline=False)
+                w.write(utils._format_jslocation(
+                    point['lat_visit'], point['lon_visit']),
+                    end_in_newline=False)
+                w.write(', ', end_in_newline=False)
+                w.write(utils._format_jscounty(
+                    point['name_county'], point['state'], point['name_seat']),
+                    end_in_newline=False)
+                w.write('},'.rjust(1))
+
+            w.dedent()
+            w.write(']')
 
 
 class TourSlice():
