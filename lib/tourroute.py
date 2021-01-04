@@ -232,6 +232,22 @@ class TourRoute():
             self._points.drop(index=self._points.iloc[locs].index,
                               inplace=True)
 
+    def update_points(self, up_dict):
+        '''
+        Update point(s) from the TourRoute
+
+        Parameters:
+            up_dict (dict): Dictionary of points to be updated. Each key
+                corresponds to a TourRoute column name, with a list of values
+                to be updated for the respective key(s). Must contain the key
+                ``gid_county`` to use as the index for updating the desired
+                point(s) aka data frame row(s).
+
+        Usage:
+            updates = {'gid_county': [10, 20], 'name_county': ['foo', 'bar']}
+
+        '''
+
     def slices(self, **kwargs):
         '''
         Returns a list of slices of length `lgth` (default=10). Each slice has
