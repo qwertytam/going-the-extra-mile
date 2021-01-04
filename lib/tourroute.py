@@ -28,6 +28,7 @@ class TourRoute():
         * add_points: Add points on the TourRoute
         * read_csv: Read in a TourRoute from a csv file
         * write_csv: Writes TourRoute to a csv file
+        * get_points: Get points from the TourRoute
 
         to dos / check:
         * write_js: Writes TourRoute to a js file for use with Google Maps API
@@ -37,7 +38,6 @@ class TourRoute():
             between each point
         * update_points: Update points on the TourRoute
         * del_points: Delete points from the TourRoute
-        * get_points: Get points from the TourRoute
         * update_visit_points: Updates the name_visit, lat_visit and lon_visit
             properties for the TourRoute. A visit point is the county seat if
             available, else the county
@@ -143,7 +143,7 @@ class TourRoute():
         for col in _POINTS_COL_NAMES_:
             try:
                 dfl.append(df[col_map[col]])
-            except:
+            except KeyError:
                 dfl.append(pd.DataFrame(columns=[col]))  # Append as empty df
 
         # Use class method to add points
@@ -169,18 +169,17 @@ class TourRoute():
         Writes the TourRoute to the given path pointing to a csv file.
 
         Parameters:
-            path (handle): A full path to a csv file e.g. ../data/data.csv. Will
-                create dir and file if they do not exist
+            path (handle): A full path to a csv file e.g. ../data/data.csv.
+                Will create dir and file if they do not exist
 
         '''
 
         # Create dir if it does not exist
         dir = os.path.dirname(path)
         if not os.path.exists(dir):
-            mkdir(dir)
+            os.mkdir(dir)
 
         self._points.to_csv(path, index=False)
-
 
     def slices(self, **kwargs):
         '''
