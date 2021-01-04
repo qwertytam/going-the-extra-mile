@@ -9,10 +9,6 @@ This file  contains the following functions:
 
 """
 
-# Indent level for the source code writer
-_INDENT_LEVEL = 4
-_INDENT = ' ' * _INDENT_LEVEL
-
 
 def _get(dict, keys, default=None, get_key=False):
     '''
@@ -40,3 +36,12 @@ def _get(dict, keys, default=None, get_key=False):
         if value is not None:
             return value if not get_key else (key, value)
     return default if not get_key else (None, default)
+
+
+def _format_jslocation(lat, lon):
+    return f'location: {{ lat: {lat}, lng: {lon} }}'
+
+
+def _format_jscounty(name, state, seat):
+    return f'county: {{ name: \"{name}\", state: \"{state}\", ' \
+        + 'seat: \"{seat}\" }}'
