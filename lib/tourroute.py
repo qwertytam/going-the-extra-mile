@@ -1,10 +1,9 @@
 
 from __future__ import absolute_import
-import googlemaps
 
+import googlemaps
 import numpy as np
-# import os
-# from os import path as ospath
+import os
 import pandas as pd
 from utils import _get
 
@@ -28,14 +27,14 @@ class TourRoute():
     Class public methods:
         * add_points: Add points on the TourRoute
         * read_csv: Read in a TourRoute from a csv file
-
         * write_csv: Writes TourRoute to a csv file
+
+        to dos / check:
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
         * slices: Slice a TourRoute into x slices of length y
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
-
         * update_points: Update points on the TourRoute
         * del_points: Delete points from the TourRoute
         * get_points: Get points from the TourRoute
@@ -164,6 +163,24 @@ class TourRoute():
                         name_visit=None if dfl[11].empty else dfl[11],
                         lat_visit=None if dfl[12].empty else dfl[12],
                         lon_visit=None if dfl[13].empty else dfl[13])
+
+def write_csv(self, path):
+    '''
+    Writes the TourRoute to the given path pointing to a csv file.
+
+    Parameters:
+        path (handle): A full path to a csv file e.g. ../data/data.csv. Will
+            create dir and file if they do not exist
+
+    '''
+
+    # Create dir if it does not exist
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        mkdir(dir)
+
+    self._points.to_csv(path, index=False)
+
 
     def slices(self, **kwargs):
         '''
