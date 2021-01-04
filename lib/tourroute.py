@@ -276,7 +276,7 @@ class TourRoute():
             ['lon_county', 'lon_seat']].apply(
             lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
 
-    def slices(self, **kwargs):
+    def slices(self, slice_len=10):
         '''
         Returns a list of slices of length `lgth` (default=10). Each slice has
         a origin, destination and optional list of waypoints. Each point is a
@@ -286,7 +286,7 @@ class TourRoute():
 
         Optional:
         Args:
-            lgth (int): Length of each slice, default of 10, minimum of 2
+            slice_len (int): Length of each slice, default of 10, minimum of 2
 
         Returns:
             slice (list of dict): List of dicts where each dict has keys
@@ -296,17 +296,16 @@ class TourRoute():
                 `destiatnion` or any of the items in the `waypoints` list) is a
                 tuple of `('lat_visit', 'lon_visit')`.
         '''
-        slice_len = max(2, _get(kwargs, 'lgth', default=10))  # Min length of 2
+        slice_len = max(2, slice_len)  # Min length of 2
         slice_list = []
-        inc = slice_len
         tr_len = len(self._points)
 
-        for i in range(0, tr_len, inc):
+        for i in range(0, tr_len, slice_len):
             org = tuple(self._points.iloc[i])
-            dest = tuple(self._points.iloc[min(tr_len - 1, i + inc)])
+            dest = tuple(self._points.iloc[min(tr_len - 1, i + slice_len - 1)])
             if slice_len > 2:
                 wpts = list(
-                    self._points.iloc[(i+1):min(tr_len - 2, i + inc - 1)
+                    self._points.iloc[(i+1):min(tr_len - 1, i + slice_len - 1)
                                       ].itertuples(index=False,
                                                    name=None))
             slice_list.append(TourSlice(org, dest, wpts))
