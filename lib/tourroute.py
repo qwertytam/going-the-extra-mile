@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import googlemaps
+import math
 import numpy as np
 import os
 import pandas as pd
@@ -31,14 +32,13 @@ class TourRoute():
         * get_points: Get points from the TourRoute
         * del_points: Delete points from the TourRoute
         * update_points: Update points on the TourRoute
-
-        to dos / check:
         * update_visit_points: Updates the name_visit, lat_visit and lon_visit
             properties for the TourRoute. A visit point is the county seat if
             available, else the county
+        * slices: Slice a TourRoute into x slices of length y
+
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
-        * slices: Slice a TourRoute into x slices of length y
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
 
@@ -257,6 +257,25 @@ class TourRoute():
                     {_PCOL_NAMES_[0]: _get(up_dict, _PCOL_NAMES_[0])}
                 ).gid_county, upd_col] = _get(up_dict, upd_col)
 
+    def update_visit_points(self):
+        '''
+        Update visit points for the TourRoute object
+
+        '''
+        # If data for county seat exists, use that data for visit; else use
+        # county data
+        self._points['name_visit'] = self._points[
+            ['name_county', 'name_seat']].apply(
+            lambda x: x[1] if type(x[1]) is str else x[0], axis=1)
+
+        self._points['lat_visit'] = self._points[
+            ['lat_county', 'lat_seat']].apply(
+            lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
+        self._points['lon_visit'] = self._points[
+            ['lon_county', 'lon_seat']].apply(
+            lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
     def slices(self, **kwargs):
         '''
         Returns a list of slices of length `lgth` (default=10). Each slice has
@@ -280,15 +299,16 @@ class TourRoute():
         slice_len = max(2, _get(kwargs, 'lgth', default=10))  # Min length of 2
         slice_list = []
         inc = slice_len
+        tr_len = len(self._points)
 
-        for i in range(0, self.length, inc):
-            org = tuple(self.waypoints.iloc[i])
-            dest = tuple(self.waypoints.iloc[min(self.length - 1, i + inc)])
+        for i in range(0, tr_len, inc):
+            org = tuple(self._points.iloc[i])
+            dest = tuple(self._points.iloc[min(tr_len - 1, i + inc)])
             if slice_len > 2:
                 wpts = list(
-                    self.waypoints.iloc[(i+1):min(self.length-2, i+inc-1)
-                                        ].itertuples(index=False,
-                                                     name=None))
+                    self._points.iloc[(i+1):min(tr_len - 2, i + inc - 1)
+                                      ].itertuples(index=False,
+                                                   name=None))
             slice_list.append(TourSlice(org, dest, wpts))
 
         return slice_list
