@@ -23,8 +23,8 @@ class TourRoute():
 
     Class public methods:
         * add_points: Add points on the TourRoute
-
         * read_csv: Read in a TourRoute from a csv file
+
         * write_csv: Writes TourRoute to a csv file
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
@@ -43,44 +43,11 @@ class TourRoute():
         * _get_csv_waypoints: Get TourRoute waypoints from a csv file
     '''
 
-    def __init__(self,
-                 gid_county, name_county, lat_county, lon_county,
-                 state, cat_code, fips_code,
-                 gid_seat=None, name_seat=None, lat_seat=None, lon_seat=None,
-                 name_visit=None, lat_visit=None, lon_visit=None):
+    def __init__(self):
         '''
-        Args:
-            gid_county (int): Geonames unique ID for the county
-            name_county (str): County name
-            lat_county (float): County latitude
-            lon_county (float): County longitude
-            state (str): County state; typically two letter abbreviation
-            cat_code (str): Category code based on Geonames use. Format is
-                CC.SS.AAA where CC is two letter country abbreviation, SS is
-                two letter state abbreviation and AAA is three digit with
-                leading zeros for the county number within the state e.g.
-                US.NY.047 for Kings County in the state of New York, USA
-            fips_code (int): Federal Information Processing Standards code for
-                each county
-
-        Optional:
-            gid_seat (int): Geonames unique ID for the county seat
-            name_seat (str): County seat name
-            lat_seat (float): Seat latitude
-            lon_seat (float): Seat longitude
-            name_visit (str): Name of the visited point; seat name if
-                available, else county name
-            lat_visit (float): Latitude of the visited point; seat lat if
-                available, else county lat
-            lon_visit (float): Longitude of the visited point; seat lon if
-                available, else county lon
 
         '''
         self._points = pd.DataFrame(columns=_POINTS_COL_NAMES_)
-        self.add_points(gid_county, name_county, lat_county,
-                        lon_county, state, cat_code, fips_code,
-                        gid_seat, name_seat, lat_seat, lon_seat,
-                        name_visit, lat_visit, lon_visit)
 
     def add_points(self,
                    gid_county, name_county, lat_county, lon_county,
@@ -146,7 +113,7 @@ class TourRoute():
     def read_csv(self, path):
         '''
         Args:
-            path (str): File path and name pointing to input data file
+            path (handle): File path and name pointing to input data file
 
         Usage::
 
