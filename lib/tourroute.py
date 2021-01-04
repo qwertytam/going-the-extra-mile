@@ -30,9 +30,9 @@ class TourRoute():
         * write_csv: Writes TourRoute to a csv file
         * get_points: Get points from the TourRoute
         * del_points: Delete points from the TourRoute
+        * update_points: Update points on the TourRoute
 
         to dos / check:
-        * update_points: Update points on the TourRoute
         * update_visit_points: Updates the name_visit, lat_visit and lon_visit
             properties for the TourRoute. A visit point is the county seat if
             available, else the county
