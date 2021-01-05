@@ -354,6 +354,26 @@ class TourRoute():
             w.dedent()
             w.write(']')
 
+    def flyingcrow_dist(self):
+        '''
+        Calculates the total tour distance in kilometres. The distance is
+        calculated as a straight line between each subsequent point in the
+        TourRoute. Calculates distance using ``lat_visit`` and ``lon_visit``.
+
+        Returns:
+            Distance in kilometres
+        '''
+        radius = 6371  # Earth's average radius in kilometres
+
+        dist = \
+            utils.haversine(self._points[['lat_visit']],
+                            self._points[['lon_visit']],
+                            self._points[['lat_visit']].shift(periods=1),
+                            self._points[['lon_visit']].shift(periods=1),
+                            to_radians=True,
+                            earth_radius=radius)
+        return pd.DataFrame(dist).sum()[0]
+
 
 class TourSlice():
     '''

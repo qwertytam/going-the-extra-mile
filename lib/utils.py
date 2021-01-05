@@ -9,6 +9,8 @@ This file  contains the following functions:
 
 """
 
+import numpy as np
+
 
 def _get(dict, keys, default=None, get_key=False):
     '''
@@ -45,3 +47,21 @@ def _format_jslocation(lat, lon):
 def _format_jscounty(name, state, seat):
     return f'county: {{ name: \"{name}\", state: \"{state}\", ' \
         + 'seat: \"{seat}\" }}'
+
+
+def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
+    """
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees or in radians)
+
+    All (lat, lon) coordinates must have numeric dtypes and be of equal length.
+
+    """
+    if to_radians:
+        lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
+
+    a = np.sin((lat2 - lat1) / 2.0) ** 2 + \
+        np.cos(lat1) * np.cos(lat2) * \
+        np.sin((lon2 - lon1)/2.0) ** 2
+
+    return earth_radius * 2 * np.arcsin(np.sqrt(a))
