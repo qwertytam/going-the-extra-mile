@@ -39,7 +39,6 @@ class TourRoute():
         * slices: Slice a TourRoute into x slices of length y
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
-
         * flyingcrow_dist: Get the total TourRoute straight line distance
             between each point
 
