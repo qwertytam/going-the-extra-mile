@@ -18,10 +18,11 @@ This file  contains the following functions:
 
 """
 
-import math
+# import math
 import numpy as np
 import os.path
 import pandas as pd
+# from tourroute import TourRoute
 
 from os import listdir, mkdir, remove
 from re import search, sub
@@ -304,7 +305,7 @@ def _clean_fipsdata(data):
     return data
 
 
-def prep_data(data, fips, path):
+def prep_data(data, fips):
     '''
     Prepares data for finding tour with the following operations:
         * Adds column for FIPS code to match up with json data for mapping
@@ -317,14 +318,9 @@ def prep_data(data, fips, path):
         data (data.frame): A data frame of geonames data that contains the
             county and county seat information
         fips (data.frame): A data frame of fips code data
-        path (str): A full path to a csv file e.g. ../data/data.csv. Will
-            create dir and file if they do not exist
 
     Returns:
         data.frame : Data frame of tour data
-
-    Raises:
-        Exception: path does not point to a csv file
 
     ** TO DO:
         * Make use of the TourRoute class by:
@@ -359,20 +355,11 @@ def prep_data(data, fips, path):
     # Drop unrequired and/or duplicated columns
     data.drop(['name'], axis=1, inplace=True)
 
-    # If data for county seat exists, use that data for visit; else use
-    # county data
-    data['name_visit'] = data[['name_county', 'name_seat']].apply(
-        lambda x: x[1] if type(x[1]) is str else x[0], axis=1)
-
-    data['lat_visit'] = data[['lat_county', 'lat_seat']].apply(
-        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
-
-    data['lon_visit'] = data[['lon_county', 'lon_seat']].apply(
-        lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
-
-    # Write and return data
-    write_data(data, path)
-    return data
+    # Return a TourRoute object
+    # tr = TourRoute()
+    print(data.columns)
+    # tr.add_points(data)
+    # return data
 
 
 def write_data(data, path):

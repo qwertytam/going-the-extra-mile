@@ -6,7 +6,7 @@ import math
 import numpy as np
 import os
 import pandas as pd
-import utils
+from going-the-extra-mile.lib import utils
 from writer import _Writer
 
 _PCOL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
