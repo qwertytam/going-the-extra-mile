@@ -13,7 +13,7 @@ import numpy as np
 
 from concorde.tsp import TSPSolver
 from datetime import datetime
-from lib.tourroute import TourRoute
+# from lib.tourroute import TourRoute
 
 
 class bcolours:  # Class for terminal output colours
@@ -68,5 +68,5 @@ def find_tour(tr, time_bound=60, random_seed=42, start_gid=6941775):
 
     # Return the tour route in the optimised order
     # data_out = data.iloc[tour_route]
-    opt_tour = tr.get_points[locs = tour_route, key = 'ilocs']
+    opt_tour = tr.get_points(locs=tour_route, key='ilocs')
     return opt_tour
