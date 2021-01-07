@@ -29,8 +29,6 @@ from lib import datagather as datag
 from lib import tourroute as tr
 from lib import findtour as ftour
 import os.path
-# import sys
-# import importlib.util
 
 
 class bcolours:  # Class for terminal output colours
@@ -42,25 +40,6 @@ class bcolours:  # Class for terminal output colours
 print(f'\n\n{"~"*80}\n')
 print(f'{"<"*5}{"-"*5}{" "*22}{bcolours.OKGREEN}'
       + f'Script starting{bcolours.ENDC}{" "*23}{"-"*5}{">"*5}\n\n')
-
-# # Import custom modules
-# # Data gatherer
-# data_spec = importlib.util.spec_from_file_location("data",
-#                                                    "../lib/datagather.py")
-# datag = importlib.util.module_from_spec(data_spec)
-# data_spec.loader.exec_module(datag)
-
-# # Optimal tour finder
-# ftour_spec = importlib.util.spec_from_file_location("data",
-#                                                     "../lib/findtour.py")
-# ftour = importlib.util.module_from_spec(ftour_spec)
-# ftour_spec.loader.exec_module(ftour)
-
-# # TourRoute class
-# tr_spec = importlib.util.spec_from_file_location("data",
-#                                                  "../lib/tourroute.py")
-# troute = importlib.util.module_from_spec(tr_spec)
-# tr_spec.loader.exec_module(troute)
 
 # Get and wrangle the data
 data_in_dir = './data'
@@ -78,17 +57,14 @@ fips_data = datag.dl_fips_codes(fips_url, fips_path)
 
 # Merge/prep the Geonames and FIPs data
 visit_data_path = os.path.join(data_in_dir, 'visit_data.csv')
-# datag.prep_data(geonames_data, fips_data, visit_data_path)
 visit_data = tr.TourRoute()
 visit_data = datag.prep_data(geonames_data, fips_data)
-# visit_data.write_csv(visit_data_path)
 
 # Remove no longer required files
 datag.remove_gndata(data_in_dir)
 
 # Data quality check
 visit_len = len(visit_data)  # How many rows do we have
-# cc_nunique = visit_data.get_cols(['cat_code']).nunique()  # How many unique
 cc_nunique = len(visit_data.get_uniques(['cat_code']))  # How many unique
 
 counties_total = 3243  # ref Wikipedia for counties and equivalents
@@ -104,7 +80,6 @@ print(f'Full data set has {cc_nunique:,} counties'
 
 # How many county seats?
 all_seats = visit_data.get_cols(['name_seat'])
-# nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().values])
 nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().name_seat])
 
 # 2021-01-07: Full data set has 2,988 seats with 154 counties with no seats
@@ -117,34 +92,34 @@ keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
                'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
                'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD',
                'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
-# visit_data.drop(
-#     visit_data.loc[~visit_data.isin({'state': keep_states}).state].index,
-#     axis=0, inplace=True)
 
-# Get the points to drop
-drop_points = visit_data.get_points(
-    ~visit_data.get_cols(['state']).isin({'state': keep_states}).values,
-    key='ilocs')
+all_states = visit_data.get_cols(['state'])
+drop_points = all_states.loc[~all_states.isin({'state': keep_states}).state]
 
 # Now delete them
+print('\n\ndrop_points::')
+print(drop_points)
+print('\n\ndrop_points.index::')
+print(drop_points.index)
 visit_data.del_points(drop_points.index, key='ilocs')
 
 # 2021-01-07: For the continental 48 plus DC, looking to visit 3,108 counties
-# with 120 counties with no seats
+# with 132 counties with no seats
 visit_len = len(visit_data)
-nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().values])
+all_seats = visit_data.get_cols(['name_seat'])
+nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().name_seat])
 print('For the continental 48 plus DC, '
       + f'looking to visit {visit_len:,} counties '
       + f'with {visit_len - nseats:,} counties with no seats')
 
 # # Run solver the save the optimised tour
-opt_tour = ftour.find_tour(visit_data)
-data_out_dir = '../out'
-opt_tour_path_csv = os.path.join(data_out_dir, 'opt_tour.csv')
-opt_tour.write_csv(opt_tour_path_csv)
-
-opt_tour_path_js = os.path.join(data_out_dir, 'opt_tour.js')
-opt_tour.write_js(opt_tour_path_js)
+# opt_tour = ftour.find_tour(visit_data)
+# data_out_dir = '../out'
+# opt_tour_path_csv = os.path.join(data_out_dir, 'opt_tour.csv')
+# opt_tour.write_csv(opt_tour_path_csv)
+#
+# opt_tour_path_js = os.path.join(data_out_dir, 'opt_tour.js')
+# opt_tour.write_js(opt_tour_path_js)
 
 print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
       + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
