@@ -6,7 +6,7 @@ import math
 import numpy as np
 import os
 import pandas as pd
-import lib.utils
+import lib.utils as utils
 from lib.writer import _Writer
 
 _PCOL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
@@ -316,7 +316,7 @@ class TourRoute():
         if nas:
             return df.apply(pd.unique)
         else:
-            return df.apply(lib.utils._unique_non_null)
+            return df.apply(utils._unique_non_null)
 
     def slices(self, slice_len=10):
         '''
