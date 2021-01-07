@@ -6128,3 +6128,4 @@ gid,name,lat,lon,f_class,f_code,country,state,county,cat_code
 7117732,Petersburg Borough,56.76529,-133.19313,A,ADM2,US,AK,195,US.AK.195
 11550055,Prince of Wales-Hyder Census Area,55.59697,-132.80273,A,ADM2,US,AK,198,US.AK.198
 11550056,Kusilvak Census Area,61.990590000000005,-164.55321999999998,A,ADM2,US,AK,158,US.AK.158
+9999999,Independence,36.802778,-118.2,P,PPLA2,US,CA,27,US.CA.027
