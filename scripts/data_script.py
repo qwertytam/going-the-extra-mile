@@ -93,19 +93,18 @@ counties_total = 3243  # ref Wikipedia for counties and equivalents
 non_state_ncounties = {'AS': 5, 'GU': 1, 'MP': 4, 'PR': 78, 'UM': 9, 'VI': 3}
 exp_ncounties = counties_total - sum(non_state_ncounties.values())
 
-# 2020-12-02: Data has 3,142 counties (1 diff to expected 3,143) with 0
-# duplicates
+# 2021-01-07: Full data set has 3,142 counties (1 diff to expected of 3,143)
+# with 0 duplicates
 print(f'Full data set has {cc_nunique:,} counties'
       + f' ({exp_ncounties - cc_nunique:,} diff to expected of '
       + f'{exp_ncounties:,}) '
       + f'with {visit_len - cc_nunique:,} duplicates')
 
 # How many county seats?
-# nseats = len(visit_data.loc[~visit_data['name_seat'].isna(), 'name_seat'])
-nseats = len(visit_data.get_uniques(['name_seat']))
+all_seats = visit_data.get_cols(['name_seat'])
+nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().values])
 
-# 2020-12-02: 2,245 seats with 155 counties with no seats, 0 counties with
-# multiple seats, and 0 duplicates
+# 2021-01-07: Full data set has 2,988 seats with 154 counties with no seats
 print(f'Full data set has {nseats:,} seats '
       + f'with {visit_len - nseats:,} counties with no seats')
 
@@ -121,16 +120,16 @@ keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
 
 # Get the points to drop
 drop_points = visit_data.get_points(
-    visit_data.get_cols(['state']).isin({'state': keep_states}).values,
+    ~visit_data.get_cols(['state']).isin({'state': keep_states}).values,
     key='ilocs')
 
 # Now delete them
 visit_data.del_points(drop_points.index, key='ilocs')
 
-# 2020-12-02: For the continental 48 plus DC, looking to visit 3,108 counties
-# with 133 counties with no seats
+# 2021-01-07: For the continental 48 plus DC, looking to visit 3,108 counties
+# with 120 counties with no seats
 visit_len = len(visit_data)
-nseats = len(visit_data.get_uniques(['name_seat']))
+nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().values])
 print('For the continental 48 plus DC, '
       + f'looking to visit {visit_len:,} counties '
       + f'with {visit_len - nseats:,} counties with no seats')
