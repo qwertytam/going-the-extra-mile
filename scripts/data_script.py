@@ -27,7 +27,7 @@ TO DO:
 
 from lib import datagather as datag
 from lib import tourroute as tr
-from lib import finfindtour as ftour
+from lib import findtour as ftour
 import os.path
 # import sys
 # import importlib.util
@@ -40,7 +40,8 @@ class bcolours:  # Class for terminal output colours
 
 
 print(f'\n\n{"~"*80}\n')
-print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
+print(f'{"<"*5}{"-"*5}{" "*22}{bcolours.OKGREEN}'
+      + f'Script starting{bcolours.ENDC}{" "*23}{"-"*5}{">"*5}\n\n')
 
 # # Import custom modules
 # # Data gatherer
@@ -103,7 +104,8 @@ print(f'Full data set has {cc_nunique:,} counties'
 
 # How many county seats?
 all_seats = visit_data.get_cols(['name_seat'])
-nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().values])
+# nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().values])
+nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().name_seat])
 
 # 2021-01-07: Full data set has 2,988 seats with 154 counties with no seats
 print(f'Full data set has {nseats:,} seats '
