@@ -22,7 +22,7 @@ This file  contains the following functions:
 import numpy as np
 import os.path
 import pandas as pd
-# from tourroute import TourRoute
+from lib.tourroute import TourRoute
 
 from os import listdir, mkdir, remove
 from re import search, sub
@@ -173,7 +173,8 @@ def _clean_countydata(data):
                              'country': 'US',
                              'state': 'CA',
                              'county': 27,
-                             'cat_code': 'US.CA.027'})
+                             'cat_code': 'US.CA.027'},
+                            index=[0])
 
     data = data.append(new_data)
 
@@ -356,10 +357,20 @@ def prep_data(data, fips):
     data.drop(['name'], axis=1, inplace=True)
 
     # Return a TourRoute object
-    # tr = TourRoute()
-    print(data.columns)
-    # tr.add_points(data)
-    # return data
+    tr = TourRoute()
+    tr.add_points(gid_county=pd.Series(data=data['gid_county']),
+                  name_county=pd.Series(data=data['name_county']),
+                  lat_county=pd.Series(data=data['lat_county']),
+                  lon_county=pd.Series(data=data['lon_county']),
+                  state=pd.Series(data=data['state']),
+                  cat_code=pd.Series(data=data['cat_code']),
+                  fips_code=pd.Series(data=data['fips_code']),
+                  gid_seat=pd.Series(data=data['gid_seat']),
+                  name_seat=pd.Series(data=data['name_seat']),
+                  lat_seat=pd.Series(data=data['lat_seat']),
+                  lon_seat=pd.Series(data=data['lon_seat']))
+    tr.update_visit_points()
+    return tr
 
 
 def write_data(data, path):
