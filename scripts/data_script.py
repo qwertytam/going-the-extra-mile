@@ -27,6 +27,7 @@ TO DO:
 
 from lib import datagather as datag
 from lib import tourroute as tr
+from lib import finfindtour as ftour
 import os.path
 # import sys
 # import importlib.util
@@ -135,11 +136,14 @@ print('For the continental 48 plus DC, '
       + f'with {visit_len - nseats:,} counties with no seats')
 
 # # Run solver the save the optimised tour
-# tour = ftour.find_tour(visit_data, -1, 67)
-# data_out_dir = '../out'
-# tour_path = os.path.join(data_out_dir, 'tour.csv')
-# datag.write_data(tour, tour_path)
-#
+opt_tour = ftour.find_tour(visit_data)
+data_out_dir = '../out'
+opt_tour_path_csv = os.path.join(data_out_dir, 'opt_tour.csv')
+opt_tour.write_csv(opt_tour_path_csv)
+
+opt_tour_path_js = os.path.join(data_out_dir, 'opt_tour.js')
+opt_tour.write_js(opt_tour_path_js)
+
 print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
       + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
 print(f'\n{"~"*80}\n')
