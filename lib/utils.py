@@ -49,6 +49,19 @@ def _format_jscounty(name, state, seat):
         + 'seat: \"{seat}\" }}'
 
 
+def _unique_non_null(s):
+    '''
+    Returns unique values excluding ``NaN`` values.
+
+    Parameters:
+        s (pd.Series): A panda Series of values to examine
+
+    Returns:
+        pd Series: A Series of unique values with no ``NaN`` values
+    '''
+    return s.dropna().unique()
+
+
 def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     """
     Calculate the great circle distance between two points
