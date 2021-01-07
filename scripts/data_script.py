@@ -115,23 +115,31 @@ keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
                'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
                'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD',
                'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
-visit_data.drop(
-    visit_data.loc[~visit_data.isin({'state': keep_states}).state].index,
-    axis=0, inplace=True)
+# visit_data.drop(
+#     visit_data.loc[~visit_data.isin({'state': keep_states}).state].index,
+#     axis=0, inplace=True)
+
+# Get the points to drop
+drop_points = visit_data.get_points(
+    visit_data.get_cols(['state']).isin({'state': keep_states}).values,
+    key='ilocs')
+
+# Now delete them
+visit_data.del_points(drop_points.index, key='ilocs')
 
 # 2020-12-02: For the continental 48 plus DC, looking to visit 3,108 counties
 # with 133 counties with no seats
 visit_len = len(visit_data)
-nseats = len(visit_data.loc[~visit_data['name_seat'].isna(), 'name_seat'])
+nseats = len(visit_data.get_uniques(['name_seat']))
 print('For the continental 48 plus DC, '
       + f'looking to visit {visit_len:,} counties '
       + f'with {visit_len - nseats:,} counties with no seats')
 
-# Run solver the save the optimised tour
-tour = ftour.find_tour(visit_data, -1, 67)
-data_out_dir = '../out'
-tour_path = os.path.join(data_out_dir, 'tour.csv')
-datag.write_data(tour, tour_path)
+# # Run solver the save the optimised tour
+# tour = ftour.find_tour(visit_data, -1, 67)
+# data_out_dir = '../out'
+# tour_path = os.path.join(data_out_dir, 'tour.csv')
+# datag.write_data(tour, tour_path)
 #
 print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
       + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
