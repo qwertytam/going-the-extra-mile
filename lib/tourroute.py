@@ -36,6 +36,8 @@ class TourRoute():
         * update_visit_points: Updates the name_visit, lat_visit and lon_visit
             properties for the TourRoute. A visit point is the county seat if
             available, else the county
+        * get_cols: Gets column(s) from the TourRoute
+        * get_uniques: Gets unique values for each column(s) from the TourRoute
         * slices: Slice a TourRoute into x slices of length y
         * write_js: Writes TourRoute to a js file for use with Google Maps API
             use
@@ -52,6 +54,12 @@ class TourRoute():
 
         '''
         self._points = pd.DataFrame(columns=_PCOL_NAMES_)
+
+    def __len__(self):
+        '''
+
+        '''
+        return len(self._points)
 
     def add_points(self,
                    gid_county, name_county, lat_county, lon_county,
@@ -275,6 +283,40 @@ class TourRoute():
         self._points['lon_visit'] = self._points[
             ['lon_county', 'lon_seat']].apply(
             lambda x: x[0] if math.isnan(x[1]) else x[1], axis=1)
+
+    def get_cols(self, cols):
+        '''
+        Gets columns(s) from the TourRoute
+
+        Parameters:
+            cols ([list of str]): List names for each of column to return
+
+        Returns:
+            pd.DataFrame of the desired columns
+        '''
+        cols = cols if isinstance(cols, (list)) else [cols]
+        return self._points[cols]
+
+    def get_uniques(self, cols, nas=False):
+        '''
+        Gets unique values for each of columns(s) from the TourRoute
+
+        Parameters:
+            cols ([list of str]): List names for each of column to return
+
+        Optional:
+            nas (bool): If True, then include ``NaN`` in the return. Defaults
+                to False.
+
+        Returns:
+            pd.Series: A panda Series of arrays. Each array corresponds to a
+                column.
+        '''
+        df = self.get_cols(cols)
+        if nas:
+            return df.apply(pd.unique)
+        else:
+            return df.apply(lib.utils._unique_non_null)
 
     def slices(self, slice_len=10):
         '''
