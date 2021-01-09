@@ -124,7 +124,6 @@ def dl_county_data(url, path):
     # Read in county data from the extracted txt file
     data = pd.read_csv(txt_path, names=header_names, header=0, dtype=dyptes,
                        usecols=keep_cols, delimiter="\t", na_values=[-1])
-
     # Keep only the geoname feature code(s) of interest
     data.drop(data.loc[~data.isin({'f_code': keep_fcodes}).f_code].index,
               axis=0, inplace=True)
@@ -134,10 +133,8 @@ def dl_county_data(url, path):
     # Add cat_code for reference and later use to identify county:seat
     # matchups
     data[['county']] = data[['county']].apply(pd.to_numeric)
-
     data['cat_code'] = data[['country', 'state', 'county']].apply(
         lambda x: (f'{x[0]}.{x[1]}.{x[2]:03d}'), axis=1)
-
     write_data(data, path)
     return data
 
@@ -161,7 +158,6 @@ def _clean_countydata(data):
     # Name correction in data source
     data.loc[data['gid'] == 5465283, 'name'] = 'Dona Ana County'
     data.loc[data['gid'] == 5135484, 'name'] = 'Saint Lawrence County'
-
     # Add county seat for Inyo County, CA
     # The default county lat/lon coordinates
     new_data = pd.DataFrame({'gid': 9999999,
@@ -176,18 +172,16 @@ def _clean_countydata(data):
                              'cat_code': 'US.CA.027'},
                             index=[0])
 
-    data = data.append(new_data)
+    data = data.append(new_data, sort=True)
 
     # Drop county seats Orange, CA and the Washington Street Courthouse Annex,
     # as they are not county seats ref Wikipedia
     drop_gids = [11497201, 5379513]
     data.drop(data.loc[data.isin(drop_gids).gid].index, axis=0, inplace=True)
-
     # # Oakley, KS is actually the county seat for Logan County,
     # # i.e. for county 109 in KS
     data.at[(data.state == 'KS') & (data.name == 'Oakley')
             & (data.f_code == _SEAT_FCODE), 'county'] = 109
-
     return data
 
 
@@ -218,23 +212,6 @@ def dl_fips_codes(url, path):
 
     # Specify dtype
     dyptes = {'FIPS_Code': 'Int64', 'State': str, 'Area_name': str}
-
-    # Check url and path are correct form
-    try:
-        error_msg = f'.csv not found before or at end of url: {url}'
-        assert (search(r'\.csv', url).span()[1] == len(url)), error_msg
-    except AttributeError:
-        print(f'.csv not found in url: {url}')
-        raise
-    else:
-        print('url is correctly formed')
-
-    try:
-        error_msg = f'.csv not found before or at end of path: {path}'
-        assert (search(r'\.csv', path).span()[1] == len(path)), error_msg
-    except AttributeError:
-        print(f'.csv not found in path: {path}')
-        raise
 
     fips = pd.read_csv(url, na_values=[' '], names=header_names,
                        usecols=keep_names, header=0, dtype=dyptes)
@@ -385,17 +362,7 @@ def write_data(data, path):
     Returns:
         data.frame : Data frame of filtered data
 
-    Raises:
-        Exception: path does not point to a csv file
     '''
-
-    # Check if path is correct form
-    try:
-        error_msg = f'.csv not found before or at end of path: {path}'
-        assert (search(r'\.csv', path).span()[1] == len(path)), error_msg
-    except AttributeError:
-        print(f'.csv not found in path: {path}')
-        raise
 
     # Create dir if it does not exist
     dir = os.path.dirname(path)
