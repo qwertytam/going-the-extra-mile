@@ -83,6 +83,10 @@ nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().name_seat])
 print(f'Full data set has {nseats:,} seats '
       + f'with {len(tour) - nseats:,} counties with no seats')
 
+# Write full data set to data dir for later use
+tour_path_csv = os.path.join(data_in_dir, 'visit_data.csv')
+tour.write_csv(tour_path_csv)
+
 # Only interested in a tour of the continental 48 plus DC
 keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
                'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA',
@@ -107,8 +111,8 @@ print('For the continental 48 plus DC, '
 tour.find_tour(time_bound=10)
 
 data_out_dir = './out'
-opt_tour_path_csv = os.path.join(data_out_dir, 'opt_tour.csv')
-tour.write_csv(opt_tour_path_csv)
+tour_path_csv = os.path.join(data_out_dir, 'tour.csv')
+tour.write_csv(tour_path_csv)
 
-opt_tour_path_js = os.path.join(data_out_dir, 'opt_tour.js')
-tour.write_js(opt_tour_path_js)
+tour_path_js = os.path.join(data_out_dir, 'tour.js')
+tour.write_js(tour_path_js)
