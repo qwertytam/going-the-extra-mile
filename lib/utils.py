@@ -46,7 +46,7 @@ def _format_jslocation(lat, lon):
 
 def _format_jscounty(name, state, seat):
     return f'county: {{ name: \"{name}\", state: \"{state}\", ' \
-        + 'seat: \"{seat}\" }}'
+        + f'seat: \"{seat}\" }}'
 
 
 def _unique_non_null(s):
