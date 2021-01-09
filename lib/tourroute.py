@@ -1,19 +1,27 @@
-
 from __future__ import absolute_import
 
 import googlemaps
 import math
 import numpy as np
-import os
+import os.path
 import pandas as pd
 import lib.utils as utils
+from concorde.tsp import TSPSolver
+from datetime import datetime
 from lib.writer import _Writer
+from os import mkdir
 
 _PCOL_NAMES_ = ['gid_county', 'name_county', 'lat_county',
                 'lon_county',
                 'state', 'cat_code', 'fips_code',
                 'gid_seat', 'name_seat', 'lat_seat', 'lon_seat',
                 'name_visit', 'lat_visit', 'lon_visit']
+
+
+class bcolours:  # Class for terminal output colours
+    OKGREEN = '\033[92m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
 
 
 class TourRoute():
@@ -183,11 +191,10 @@ class TourRoute():
                 Will create dir and file if they do not exist
 
         '''
-
         # Create dir if it does not exist
         dir = os.path.dirname(path)
         if not os.path.exists(dir):
-            os.mkdir(dir)
+            mkdir(dir)
 
         self._points.to_csv(path, index=False)
 
@@ -240,6 +247,8 @@ class TourRoute():
         else:
             self._points.drop(index=self._points.iloc[locs].index,
                               inplace=True)
+
+        self._points.reset_index(drop=True, inplace=True)
 
     def update_points(self, up_dict):
         '''
@@ -318,6 +327,34 @@ class TourRoute():
         else:
             return df.apply(utils._unique_non_null)
 
+    def rotate(self, gid_county):
+        '''
+        Rotates a TourRoute so that the given gid_county is the first point
+
+        Parameters:
+            gid_county (int): Geonames ID for a county
+        '''
+        iter = 0
+        while self._points.gid_county.iloc[0] != gid_county:
+            self._points = self._points[1:].append(self._points[:1])
+
+            iter += 1
+            if iter == len(self):
+                print(f'WARNING: TourRoute.rotate() gid_county::{gid_county}'
+                      + ' not found')
+                break
+
+    def reorder(self, ilocs):
+        '''
+        Reorders a TourRoute based on the given integer locations
+
+        Parameters:
+            ilocs ([int]): List or array of integers corresponding to TourRoute
+        '''
+
+        ilocs = ilocs if isinstance(ilocs, (list)) else ilocs.tolist()
+        self._points = self._points.reindex(ilocs)
+
     def slices(self, slice_len=10):
         '''
         Returns a list of slices of length `lgth` (default=10). Each slice has
@@ -380,7 +417,6 @@ class TourRoute():
         with _Writer(file) as w:
             w.write(f'var {tour_name} = [')
             w.indent()
-
             for idx, point in self._points.iterrows():
                 w.write('{ ', end_in_newline=False)
                 w.write(utils._format_jslocation(
@@ -390,7 +426,7 @@ class TourRoute():
                 w.write(utils._format_jscounty(
                     point['name_county'], point['state'], point['name_seat']),
                     end_in_newline=False)
-                w.write('},'.rjust(1))
+                w.write('},'.rjust(2))
 
             w.dedent()
             w.write(']')
@@ -414,6 +450,44 @@ class TourRoute():
                             to_radians=True,
                             earth_radius=radius)
         return pd.DataFrame(dist).sum()[0]
+
+    def find_tour(self, time_bound=60, random_seed=42, start_gid=6941775):
+        '''
+        Use the Concorde algorithim to find the optimal tour. Returns the
+        optimised tour.
+
+        Parameters:
+            time_bound (int): Time bound in seconds (?) for Concorde
+                algorithim. Defaults to 60. For unbounded, use ``-1``
+            random_seed (int): Random seed for Concorde algorithim. Defaults
+                to 42.
+            start_gid (int): Geonames county id to start the tour at. Defaults
+                to 6941775 (Kings County, NY)
+
+        '''
+        data = self.get_cols(['lat_visit', 'lon_visit'])
+
+        # Instantiate solver
+        solver = TSPSolver.from_data(
+            data.lat_visit,
+            data.lon_visit,
+            norm="GEO"
+        )
+
+        # Find tour
+        start_time = datetime.now()
+        tour_data = solver.solve(time_bound=time_bound, verbose=False,
+                                 random_seed=random_seed)
+
+        # Print diagnostics
+        print(f'\n\n{"~"*80}\n')
+        print(f'Tour found in {(datetime.now() - start_time)}')
+        print(f'{bcolours.OKGREEN}Solver was successful{bcolours.ENDC}'
+              if tour_data.success else
+              f'{bcolours.FAIL}Solver was NOT successful{bcolours.ENDC}')
+
+        self.reorder(tour_data.tour)
+        self.rotate(start_gid)
 
 
 class TourSlice():
