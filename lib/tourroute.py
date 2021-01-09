@@ -426,8 +426,7 @@ class TourRoute():
                 w.write(utils._format_jscounty(
                     point['name_county'], point['state'], point['name_seat']),
                     end_in_newline=False)
-                # w.write('},'.rjust(2))
-                w.write(' },')
+                w.write('},')
 
             w.dedent()
             w.write(']')
