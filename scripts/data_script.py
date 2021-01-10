@@ -24,78 +24,68 @@ TO DO:
 
 """
 
+
+from lib import datagather as datag
+from lib import tourroute as tr
 import os.path
-import importlib.util
-
-# Class for terminal output colours
 
 
-class bcolours:
+class bcolours:  # Class for terminal output colours
     OKGREEN = '\033[92m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
 
 
 print(f'\n\n{"~"*80}\n')
-print(f'{"<"*5}{"-"*5}{" "*22}Script starting{" "*23}{"-"*5}{">"*5}\n\n')
+print(f'{"<"*5}{"-"*5}{" "*22}{bcolours.OKGREEN}'
+      + f'Script starting{bcolours.ENDC}{" "*23}{"-"*5}{">"*5}\n\n')
 
-# Import custom modules
-# Data gatherer
-data_spec = importlib.util.spec_from_file_location("data",
-                                                   "../lib/datagather.py")
-datag = importlib.util.module_from_spec(data_spec)
-data_spec.loader.exec_module(datag)
+# Get and wrangle the data
+data_in_dir = './data'
 
-# Optimal tour finder
-ftour_spec = importlib.util.spec_from_file_location("data",
-                                                    "../lib/findtour.py")
-ftour = importlib.util.module_from_spec(ftour_spec)
-ftour_spec.loader.exec_module(ftour)
-
-
-# Script variables
-data_in_dir = '../data'
-data_out_dir = '../out'
-
+# Geonames data
 geonames_url = 'https://download.geonames.org/export/dump/US.zip'
 geonames_data_path = os.path.join(data_in_dir, 'geonames_data.csv')
+geonames_data = datag.dl_county_data(geonames_url, geonames_data_path)
 
+# FIPS data
 fips_url = 'https://raw.githubusercontent.com/python-visualization/folium/' + \
     'master/examples/data/us_county_data.csv'
 fips_path = os.path.join(data_in_dir, 'fips_codes.csv')
-
-visit_data_path = os.path.join(data_in_dir, 'visit_data.csv')
-
-tour_path = os.path.join(data_out_dir, 'tour.csv')
-
-# Get and wrangle the data
-geonames_data = datag.dl_county_data(geonames_url, geonames_data_path)
 fips_data = datag.dl_fips_codes(fips_url, fips_path)
-visit_data = datag.prep_data(geonames_data, fips_data, visit_data_path)
+
+# Merge/prep the Geonames and FIPs data
+tour = tr.TourRoute()
+tour = datag.prep_data(geonames_data, fips_data)
+
+# Remove no longer required files
 datag.remove_gndata(data_in_dir)
 
 # Data quality check
-visit_nrows = len(visit_data)  # How many rows do we have
-cc_nunique = len(visit_data['cat_code'].unique())  # How many unique
+cc_nunique = len(tour.get_uniques(['cat_code']))  # How many unique
 
 counties_total = 3243  # ref Wikipedia for counties and equivalents
 non_state_ncounties = {'AS': 5, 'GU': 1, 'MP': 4, 'PR': 78, 'UM': 9, 'VI': 3}
 exp_ncounties = counties_total - sum(non_state_ncounties.values())
 
-# 2020-12-02: Data has 3,142 counties (1 diff to expected 3,143) with 0
-# duplicates
+# 2021-01-07: Full data set has 3,142 counties (1 diff to expected of 3,143)
+# with 0 duplicates
 print(f'Full data set has {cc_nunique:,} counties'
       + f' ({exp_ncounties - cc_nunique:,} diff to expected of '
       + f'{exp_ncounties:,}) '
-      + f'with {visit_nrows - cc_nunique:,} duplicates')
+      + f'with {len(tour) - cc_nunique:,} duplicates')
 
 # How many county seats?
-nseats = len(visit_data.loc[~visit_data['name_seat'].isna(), 'name_seat'])
+all_seats = tour.get_cols(['name_seat'])
+nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().name_seat])
 
-# 2020-12-02: 2,245 seats with 155 counties with no seats, 0 counties with
-# multiple seats, and 0 duplicates
+# 2021-01-07: Full data set has 2,988 seats with 154 counties with no seats
 print(f'Full data set has {nseats:,} seats '
-      + f'with {visit_nrows - nseats:,} counties with no seats')
+      + f'with {len(tour) - nseats:,} counties with no seats')
+
+# Write full data set to data dir for later use
+tour_path_csv = os.path.join(data_in_dir, 'visit_data.csv')
+tour.write_csv(tour_path_csv)
 
 # Only interested in a tour of the continental 48 plus DC
 keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
@@ -103,22 +93,26 @@ keep_states = ['AL', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA',
                'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM',
                'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD',
                'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
-visit_data.drop(
-    visit_data.loc[~visit_data.isin({'state': keep_states}).state].index,
-    axis=0, inplace=True)
 
-# 2020-12-02: For the continental 48 plus DC, looking to visit 3,108 counties
-# with 133 counties with no seats
-visit_nrows = len(visit_data)
-nseats = len(visit_data.loc[~visit_data['name_seat'].isna(), 'name_seat'])
+all_states = tour.get_cols(['state'])
+drop_points = all_states.loc[~all_states.isin({'state': keep_states}).state]
+
+# Now delete them
+tour.del_points(drop_points.index, key='ilocs')
+
+# 2021-01-07: For the continental 48 plus DC, looking to visit 3,108 counties
+# with 132 counties with no seats
+all_seats = tour.get_cols(['name_seat'])
+nseats = len(all_seats) - len(all_seats.loc[all_seats.isna().name_seat])
 print('For the continental 48 plus DC, '
-      + f'looking to visit {visit_nrows:,} counties '
-      + f'with {visit_nrows - nseats:,} counties with no seats')
+      + f'looking to visit {len(tour):,} counties '
+      + f'with {len(tour) - nseats:,} counties with no seats')
 
-# Run solver the save the optimised tour
-tour = ftour.find_tour(visit_data, -1, 67)
-datag.write_data(tour, tour_path)
+tour.find_tour(time_bound=10)
 
-print(f'\n\n{bcolours.OKGREEN}{"<"*5}{"-"*5}{" "*22}Script completed'
-      + f'{" "*22}{"-"*5}{">"*5}{bcolours.ENDC}')
-print(f'\n{"~"*80}\n')
+data_out_dir = './out'
+tour_path_csv = os.path.join(data_out_dir, 'tour.csv')
+tour.write_csv(tour_path_csv)
+
+tour_path_js = os.path.join(data_out_dir, 'tour.js')
+tour.write_js(tour_path_js)

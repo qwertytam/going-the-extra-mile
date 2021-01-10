@@ -47,8 +47,16 @@ body {
 
 #route-panel {
   margin-top: 10px;
-  background-color: #ffee77;
+  background-color: #f9f9f9;
   padding: 10px;
   overflow: scroll;
   height: 400px;
+}
+
+#zero-panel {
+  margin-top: 10px;
+  background-color: #ffee77;
+  padding: 10px;
+  overflow: scroll;
+  height: 200px;
 }
